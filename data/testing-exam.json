@@ -1,0 +1,146 @@
+{
+    "id": "testing-exam",
+    "name": "Testing Exam",
+    "examTemplateUrl": "assets/exams/no-exam-uploaded.pdf",
+    "questions": [
+        {
+            "id": "Q1", "name": "Q1: Question One", "pages": "2",
+            "progress": { "aiHigh": 65, "aiLow": 35, "gradedOnce": 0, "graded2Plus": 0 },
+            "points": 8
+        },
+        {
+            "id": "Q2", "name": "Q2: Question Two", "pages": "3",
+            "progress": { "aiHigh": 80, "aiLow": 20, "gradedOnce": 0, "graded2Plus": 0 },
+            "points": 6
+        },
+        {
+            "id": "Q3", "name": "Q3: Question Three", "pages": "4",
+            "progress": { "aiHigh": 50, "aiLow": 50, "gradedOnce": 0, "graded2Plus": 0 },
+            "subquestions": [
+                { "id": "Q3A", "name": "3.A", "points": 3 },
+                { "id": "Q3B", "name": "3.B", "points": 6 }
+            ]
+        },
+        {
+            "id": "Q4", "name": "Q4: Question Four", "pages": "5",
+            "progress": { "aiHigh": 70, "aiLow": 30, "gradedOnce": 0, "graded2Plus": 0 },
+            "subquestions": [
+                { "id": "Q4A", "name": "4.A", "points": 4 },
+                { "id": "Q4B", "name": "4.B", "points": 4 }
+            ]
+        }
+    ],
+    "gradingCheckpoints": [
+        { "questionId": "Q1", "page": 2, "rubricPage": 2, "position": { "x": "50%", "y": "95%" } },
+        { "questionId": "Q2", "page": 3, "rubricPage": 3, "position": { "x": "50%", "y": "95%" } },
+        { "questionId": "Q3A", "page": 4, "rubricPage": 4, "position": { "x": "50%", "y": "95%" } },
+        { "questionId": "Q4A", "page": 5, "rubricPage": 5, "position": { "x": "50%", "y": "95%" } }
+    ],
+    "rubrics": [],
+    "references": [],
+    "studentSubmissions": [{
+            "id": "student_201",
+            "name": "Student A",
+            "url": "assets/student-solutions/studentA.pdf",
+            "grades": [
+                { "questionId": "Q1", "confidence": 60, "aiSuggestedScore": 4, "comment": "2 points for the correct derivative, 0 points for not getting the critical values, 1 point for the correct classification formula but not the concrete values, 1 point for the correct calculation formula but no concrete value" },
+                { "questionId": "Q2", "confidence": 26, "aiSuggestedScore": 5, "comment": "2 points for the correct intersection points, 1 point for correct bounds but wrong integral, 2 points for the correct integral evaluation" },
+                { "questionId": "Q3A", "confidence": 72, "aiSuggestedScore": 3, "comment": "3 points awarded for correctly identifying the transition matrix." },
+                { "questionId": "Q3B", "confidence": 65, "aiSuggestedScore": 0, "comment": "0 points as the subsequent calculations were not attempted." },
+                { "questionId": "Q4A", "confidence": 91, "aiSuggestedScore": 4 },
+                { "questionId": "Q4B", "confidence": 82, "aiSuggestedScore": 3 }
+            ]
+        },
+        {
+            "id": "student_202",
+            "name": "Student B",
+            "url": "assets/student-solutions/studentB.pdf",
+            "grades": [
+                { "questionId": "Q1", "confidence": 70, "aiSuggestedScore": 7 },
+                { "questionId": "Q2", "confidence": 71, "aiSuggestedScore": 5 },
+                { "questionId": "Q3A", "confidence": 43, "aiSuggestedScore": 1 },
+                { "questionId": "Q3B", "confidence": 58, "aiSuggestedScore": 3 },
+                { "questionId": "Q4A", "confidence": 85, "aiSuggestedScore": 3 },
+                { "questionId": "Q4B", "confidence": 77, "aiSuggestedScore": 3 }
+            ]
+        },
+        {
+            "id": "student_203",
+            "name": "Student C",
+            "url": "assets/student-solutions/studentC.pdf",
+            "grades": [
+                { "questionId": "Q1", "confidence": 89, "aiSuggestedScore": 8 },
+                { "questionId": "Q2", "confidence": 81, "aiSuggestedScore": 6 },
+                { "questionId": "Q3A", "confidence": 68, "aiSuggestedScore": 2 },
+                { "questionId": "Q3B", "confidence": 74, "aiSuggestedScore": 5 },
+                { "questionId": "Q4A", "confidence": 94, "aiSuggestedScore": 4 },
+                { "questionId": "Q4B", "confidence": 88, "aiSuggestedScore": 4 }
+            ]
+        },
+        {
+            "id": "student_204",
+            "name": "Student D",
+            "url": "assets/student-solutions/studentD.pdf",
+            "grades": [
+                { "questionId": "Q1", "confidence": 62, "aiSuggestedScore": 5 },
+                { "questionId": "Q2", "confidence": 75, "aiSuggestedScore": 5 },
+                { "questionId": "Q3A", "confidence": 33, "aiSuggestedScore": 0 },
+                { "questionId": "Q3B", "confidence": 48, "aiSuggestedScore": 2 },
+                { "questionId": "Q4A", "confidence": 70, "aiSuggestedScore": 3 },
+                { "questionId": "Q4B", "confidence": 65, "aiSuggestedScore": 2 }
+            ]
+        },
+        { "id": "student_205", "name": "Student E", "url": "assets/student-solutions/studentE.pdf", "grades": [] }
+    ],
+    "appState": {
+        "gradingProgress": {
+            "aiHigh": 66, "aiLow": 34, "gradedOnce": 0, "graded2Plus": 0
+        },
+        "taskAllocation": {
+            "tas": [
+                { "id": "TA1", "name": "TA 1", "workload": 0, "maxWorkload": 20, "tasks": [] },
+                { "id": "TA2", "name": "TA 2", "workload": 0, "maxWorkload": 20, "tasks": [] },
+                { "id": "TA3", "name": "TA 3", "workload": 0, "maxWorkload": 20, "tasks": [] },
+                { "id": "TA4", "name": "TA 4", "workload": 0, "maxWorkload": 20, "tasks": [] },
+                { "id": "TA5", "name": "TA 5", "workload": 0, "maxWorkload": 20, "tasks": [] }
+            ],
+            "tasks": [
+                { "taskId": "Q1", "version": "first", "confidence": 85, "assigned": false },
+                { "taskId": "Q1", "version": "second", "confidence": 85, "assigned": false },
+                { "taskId": "Q2", "version": "first", "confidence": 72, "assigned": false },
+                { "taskId": "Q2", "version": "second", "confidence": 72, "assigned": false },
+                { "taskId": "Q3A", "version": "first", "confidence": 34, "assigned": false },
+                { "taskId": "Q3A", "version": "second", "confidence": 34, "assigned": false },
+                { "taskId": "Q3B", "version": "first", "confidence": 68, "assigned": false },
+                { "taskId": "Q3B", "version": "second", "confidence": 68, "assigned": false },
+                { "taskId": "Q4A", "version": "first", "confidence": 91, "assigned": false },
+                { "taskId": "Q4A", "version": "second", "confidence": 91, "assigned": false },
+                { "taskId": "Q4B", "version": "first", "confidence": 55, "assigned": false },
+                { "taskId": "Q4B", "version": "second", "confidence": 55, "assigned": false }
+            ]
+        },
+        "gradingParameters": {
+            "studentScoreThreshold": 75,
+            "aiConfidenceThreshold": 80,
+            "highlightAIAttention": false,
+            "showAIReasoning": true
+        },
+        "automatedProcesses": {
+            "aiGrading": {
+                "lastRun": "N/A",
+                "status": "ready"
+            },
+            "consistencyChecker": {
+                "lastRun": "N/A",
+                "status": "ready",
+                "conflictCount": 0
+            },
+            "rubricEvaluator": {
+                "lastRun": "N/A",
+                "status": "ready"
+            }
+        },
+        "comments": [],
+        "broadcasts": []
+    }
+}

@@ -1,0 +1,146 @@
+{
+    "id": "dummy-repository",
+    "name": "Dummy Repository",
+    "examTemplateUrl": "assets/exams/dummy-exam.pdf",
+    "questions": [
+        {
+            "id": "Q1", "name": "Q1: Basic Arithmetic", "pages": "1-2",
+            "progress": { "aiHigh": 70, "aiLow": 0, "gradedOnce": 10, "graded2Plus": 20 },
+            "subquestions": [
+                { "id": "1.A", "name": "1.A", "points": 5 },
+                { "id": "1.B", "name": "1.B", "points": 5 }
+            ]
+        },
+        {
+            "id": "Q2", "name": "Q2: Advanced Algebra", "pages": "3",
+            "progress": { "aiHigh": 80, "aiLow": 10, "gradedOnce": 5, "graded2Plus": 5 },
+            "subquestions": [
+                { "id": "2.A", "name": "2.A", "points": 5 },
+                { "id": "2.B", "name": "2.B", "points": 5 },
+                { "id": "2.C", "name": "2.C", "points": 5 }
+            ]
+        },
+        {
+            "id": "Q3", "name": "Q3: Trigonometry", "pages": "4",
+            "progress": { "aiHigh": 45, "aiLow": 25, "gradedOnce": 10, "graded2Plus": 20 },
+            "subquestions": [
+                { "id": "3.A", "name": "3.A", "points": 5 }
+            ]
+        },
+        {
+            "id": "Q4", "name": "Q4: Data Analysis", "pages": "5-6",
+            "progress": { "aiHigh": 60, "aiLow": 18, "gradedOnce": 12, "graded2Plus": 10 },
+            "subquestions": [
+                { "id": "4.A", "name": "4.A", "points": 5 },
+                { "id": "4.B", "name": "4.B", "points": 5 }
+            ]
+        }
+    ],
+    "gradingCheckpoints": [
+        { "id": "cp-1", "questionId": "Q1A", "x": "50px", "y": "150px", "points": 2 },
+        { "id": "cp-2", "questionId": "Q1A", "x": "50px", "y": "470px", "points": 2 },
+        { "id": "cp-3", "questionId": "Q1A", "x": "50px", "y": "810px", "points": 1 }
+    ],
+    "rubrics": [
+        { "name": "Q1 Rubric", "url": "assets/rubric/dummy-rubric.pdf" },
+        { "name": "General Rubric", "url": "assets/rubric/general-rubric.pdf" }
+    ],
+    "references": [
+        { "name": "Control Systems Textbook Ch. 8", "url": "assets/references/dummy-reference.pdf" } 
+    ],
+    "studentSubmissions": [
+        { "id": "student_101", "name": "Alex Doe", "url": "assets/exams/dummy-exam.pdf" },
+        { "id": "student_102", "name": "Jane Smith", "url": "assets/exams/no-exam-uploaded.pdf" },
+        { "id": "student_103", "name": "Sam Wilson", "url": "assets/exams/no-exam-uploaded.pdf" }
+    ],
+    "appState": {
+        "gradingProgress": {
+            "aiHigh": 70, "aiLow": 10, "gradedOnce": 10, "graded2Plus": 10
+        },
+        "taskAllocation": {
+            "tas": [
+                {
+                    "id": "TA1",
+                    "name": "TA 1",
+                    "workload": 15,
+                    "maxWorkload": 20,
+                    "tasks": [
+                        { "taskId": "1.A", "version": "first" },
+                        { "taskId": "4.B", "version": "first" }
+                    ]
+                },
+                {
+                    "id": "TA2",
+                    "name": "TA 2",
+                    "workload": 18,
+                    "maxWorkload": 20,
+                    "tasks": [
+                        { "taskId": "1.A", "version": "second" },
+                        { "taskId": "2.A", "version": "first" }
+                    ]
+                },
+                { "id": "TA3", "name": "TA 3", "workload": 0, "maxWorkload": 20, "tasks": [] },
+                { "id": "TA4", "name": "TA 4", "workload": 0, "maxWorkload": 20, "tasks": [] },
+                { "id": "TA5", "name": "TA 5", "workload": 0, "maxWorkload": 20, "tasks": [] }
+            ],
+            "tasks": [
+                { "taskId": "1.A", "version": "first", "confidence": "high", "assigned": true },
+                { "taskId": "1.A", "version": "second", "confidence": "high", "assigned": true },
+                { "taskId": "1.B", "version": "first", "confidence": "low", "assigned": false },
+                { "taskId": "1.B", "version": "second", "confidence": "low", "assigned": false },
+                { "taskId": "2.A", "version": "first", "confidence": "graded-once", "assigned": true },
+                { "taskId": "2.A", "version": "second", "confidence": "graded-2plus", "assigned": false },
+                { "taskId": "2.B", "version": "first", "confidence": "medium", "assigned": false },
+                { "taskId": "2.B", "version": "second", "confidence": "medium", "assigned": false },
+                { "taskId": "2.C", "version": "first", "confidence": "low", "assigned": false },
+                { "taskId": "2.C", "version": "second", "confidence": "low", "assigned": false },
+                { "taskId": "3.A", "version": "first", "confidence": "graded-once", "assigned": false },
+                { "taskId": "3.A", "version": "second", "confidence": "graded-2plus", "assigned": false },
+                { "taskId": "4.A", "version": "first", "confidence": "high", "assigned": false },
+                { "taskId": "4.A", "version": "second", "confidence": "high", "assigned": false },
+                { "taskId": "4.B", "version": "first", "confidence": "graded-once", "assigned": true },
+                { "taskId": "4.B", "version": "second", "confidence": "graded-2plus", "assigned": false }
+            ]
+        },
+        "gradingParameters": {
+            "studentScoreThreshold": 75,
+            "aiConfidenceThreshold": 80,
+            "highlightAIAttention": false,
+            "showAIReasoning": true
+        },
+        "automatedProcesses": {
+            "aiGrading": {
+                "lastRun": "2024-05-21 14:00 PM",
+                "status": "ready"
+            },
+            "consistencyChecker": {
+                "lastRun": "2024-05-20 10:30 AM",
+                "status": "conflicts-found",
+                "conflictCount": 4
+            },
+            "rubricEvaluator": {
+                "lastRun": "N/A",
+                "status": "ready"
+            }
+        },
+        "comments": [],
+        "broadcasts": [
+            {
+                "id": "broadcast-1710589500000",
+                "title": "Rubric change suggestion from TA1",
+                "description": "Consider changing Q2 part B rubric as many students are misinterpreting this exam item.",
+                "type": "Suggestion",
+                "timestamp": "2024-03-16T11:45:00.000Z",
+                "archived": false
+            },
+            {
+                "id": "broadcast-1710514800000",
+                "title": "Announcement from Professor",
+                "description": "Please finalize grading by tomorrow EOD. Deadline approaching!",
+                "type": "Announcement",
+                "timestamp": "2024-03-15T15:00:00.000Z",
+                "archived": false
+            }
+        ]
+    }
+}

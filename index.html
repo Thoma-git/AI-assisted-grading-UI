@@ -1,0 +1,2186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Exam Management Dashboard</title>
+    <link href="dist/output.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-gray-900 dark:text-gray-100 antialiased">
+    <div class="flex">
+        <div class="flex-1 p-8 space-y-8 max-w-[calc(100%-20rem)]">
+            <header class="mb-4">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-4xl font-bold text-gray-900 dark:text-white">Exam Management Dashboard</h1>
+                    <div class="flex items-center gap-4">
+                        <button id="theme-toggle" type="button"
+                            class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors duration-200 flex items-center justify-center">
+                            <span class="material-symbols-outlined" id="theme-toggle-dark-icon">dark_mode</span>
+                            <span class="material-symbols-outlined hidden"
+                                id="theme-toggle-light-icon">light_mode</span>
+                        </button>
+                        <button id="manage-resources-btn"
+                            class="inline-flex items-center px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium rounded-lg shadow-sm hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-background-dark transition-colors duration-200 text-lg">
+                            <span class="material-symbols-outlined mr-2 -ml-1">folder_managed</span>
+                            Manage Resources
+                        </button>
+                        <a class="inline-flex items-center px-4 py-2 bg-primary text-white font-medium rounded-lg shadow-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background-dark transition-colors duration-200 text-lg"
+                            href="grading.html">
+                            <span class="material-symbols-outlined mr-2 -ml-1">edit_note</span>
+                            Grading Portal
+                        </a>
+                    </div>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400 text-lg">Centralized platform for AI-powered and manual exam
+                    assessment.</p>
+                <h2 id="repository-name-display" class="text-2xl font-semibold text-primary dark:text-blue-400 mt-2">No
+                    Repository Loaded</h2>
+            </header>
+            <div
+                class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg flex flex-col lg:flex-row items-start justify-between gap-8 mb-8">
+                <div class="w-full lg:w-auto flex flex-col">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Grading Progress</h2>
+                    <div id="grading-progress-container" class="flex items-center gap-8 flex-shrink-0">
+                        <div class="relative flex-shrink-0">
+                            <div class="donut-chart"></div>
+                            <div class="donut-chart-center-text text-gray-900 dark:text-white"></div>
+                            <div class="donut-chart-subtext text-gray-600 dark:text-gray-400"></div>
+                        </div>
+                        <div class="space-y-1 text-sm">
+                            <!-- Legend items will be dynamically controlled if needed, but are static for now -->
+                            <div class="legend-item">
+                                <div class="legend-color-swatch" style="background-color: #3B82F6;"></div><span
+                                    class="text-gray-700 dark:text-gray-300 font-medium">AI conf &ge; Threshold</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color-swatch" style="background-color: #60A5FA;"></div><span
+                                    class="text-gray-700 dark:text-gray-300 font-medium">AI conf &lt; Threshold</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color-swatch" style="background-color: #EF4444;"></div><span
+                                    class="text-gray-700 dark:text-gray-300 font-medium">Low AI Score (High Conf)</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color-swatch" style="background-color: #86EFAC;"></div><span
+                                    class="text-gray-700 dark:text-gray-300 font-medium">graded once</span>
+                            </div>
+                            <div class="legend-item">
+                                <div class="legend-color-swatch" style="background-color: #22C55E;"></div><span
+                                    class="text-gray-700 dark:text-gray-300 font-medium">graded 2+ times</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr class="w-full lg:w-px lg:h-40 my-6 lg:my-0 border-gray-200 dark:border-gray-700 lg:hidden" />
+                <div class="flex-1 w-full">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Exam Question Breakdown</h3>
+                    <div id="question-breakdown-container" class="space-y-1"></div>
+                </div>
+            </div>
+            <div class="lg:grid lg:grid-cols-[280px_1fr] gap-8">
+                <div class="space-y-8">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg w-full">
+                        <h2 class="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Grading Parameters</h2>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                    for="student-score">Review threshold (student score)</label>
+                                <div class="flex items-center mt-2">
+                                    <input
+                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary"
+                                        id="student-score" max="100" min="0" type="range" value="50" />
+                                    <span class="ml-4 text-sm font-semibold text-primary w-12 text-right">50%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                                    for="ai-confidence">Review threshold (AI confidence)</label>
+                                <div class="flex items-center mt-2">
+                                    <input
+                                        class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-primary"
+                                        id="ai-confidence" max="100" min="0" type="range" value="50" />
+                                    <span class="ml-4 text-sm font-semibold text-primary w-12 text-right">50%</span>
+                                </div>
+                            </div>
+                            <hr class="my-6 border-gray-200 dark:border-gray-700" />
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Highlight AI
+                                        attention area</span>
+                                    <label class="inline-flex relative items-center cursor-pointer"
+                                        for="attention-toggle"
+                                        title="Toggle to highlight areas AI suggests need attention">
+                                        <input class="sr-only peer" id="attention-toggle" type="checkbox" value="" />
+                                        <div
+                                            class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary">
+                                        </div>
+                                    </label>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Show AI
+                                        reasoning</span>
+                                    <label class="inline-flex relative items-center cursor-pointer"
+                                        for="reasoning-toggle"
+                                        title="Toggle to display AI's reasoning for suggested grades">
+                                        <input class="sr-only peer" id="reasoning-toggle" type="checkbox" value="" />
+                                        <div
+                                            class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary">
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg w-full">
+                        <h2 class="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Automated Processes</h2>
+                        <div class="space-y-6">
+                            <div class="flex flex-col">
+                                <div id="ai-grading-process" class="flex items-center gap-4 mb-2">
+                                    <button aria-label="Run AI Grading"
+                                        class="process-run-btn flex items-center justify-center w-10 h-10 text-white bg-primary rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-background-dark transition-colors duration-200 flex-shrink-0">
+                                        <span class="material-symbols-outlined text-xl">play_arrow</span>
+                                    </button>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <p class="text-base font-medium text-gray-700 dark:text-gray-300">Run AI
+                                                grading</p>
+                                            <div class="info-tooltip-container">
+                                                <span
+                                                    class="material-symbols-outlined text-base text-gray-500 dark:text-gray-400 cursor-help">info</span>
+                                                <div
+                                                    class="info-tooltip absolute bottom-full right-0 mb-2 w-64 bg-gray-900 text-white text-xs rounded py-1 px-2 z-10 shadow-lg -translate-x-1/2 left-1/2">
+                                                    Applies the AI model to all ungraded submissions to generate initial
+                                                    scores and confidence levels.</div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="last-run-container flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                            <span class="material-symbols-outlined text-sm mr-1">schedule</span>
+                                            <span class="last-run-time"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="w-full text-center status-display-container">
+                                    <span
+                                        class="status-unavailable text-lg font-bold flex items-center justify-center gap-1 bg-gray-100 dark:bg-gray-900/40 py-2 px-3 rounded-lg text-gray-500 dark:text-gray-400"><span
+                                            class="material-symbols-outlined text-base">block</span>Unavailable</span>
+                                    <span
+                                        class="status-ready hidden text-lg font-bold flex items-center justify-center gap-1 bg-green-100 dark:bg-green-900/40 py-2 px-3 rounded-lg"><span
+                                            class="material-symbols-outlined text-base">task_alt</span>Ready</span>
+                                </div>
+                            </div>
+                            <hr class="border-gray-200 dark:border-gray-700" />
+                            <div class="flex flex-col">
+                                <div id="consistency-checker-process" class="flex items-center gap-4 mb-2">
+                                    <button aria-label="Run Grading Consistency Checker"
+                                        class="process-run-btn flex items-center justify-center w-10 h-10 text-white bg-primary rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-background-dark transition-colors duration-200 flex-shrink-0">
+                                        <span class="material-symbols-outlined text-xl">play_arrow</span>
+                                    </button>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <p class="text-base font-medium text-gray-700 dark:text-gray-300">Grading
+                                                Consistency Checker</p>
+                                            <div class="info-tooltip-container">
+                                                <span
+                                                    class="material-symbols-outlined text-base text-gray-500 dark:text-gray-400 cursor-help">info</span>
+                                                <div
+                                                    class="info-tooltip absolute bottom-full right-0 mb-2 w-64 bg-gray-900 text-white text-xs rounded py-1 px-2 z-10 shadow-lg -translate-x-1/2 left-1/2">
+                                                    Compares grades between TAs and between TAs and the AI for the same
+                                                    items to identify significant discrepancies.</div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="last-run-container flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                            <span class="material-symbols-outlined text-sm mr-1">schedule</span>
+                                            <span class="last-run-time"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="w-full text-center status-display-container"
+                                    id="consistency-checker-output">
+                                    <span
+                                        class="status-unavailable text-lg font-bold flex items-center justify-center gap-1 bg-gray-100 dark:bg-gray-900/40 py-2 px-3 rounded-lg text-gray-500 dark:text-gray-400"><span
+                                            class="material-symbols-outlined text-base">block</span>Unavailable</span>
+                                    <div class="status-no-conflicts hidden flex items-center justify-center gap-2 bg-green-100 dark:bg-green-900/40 py-3 px-4 rounded-lg text-green-700 dark:text-green-300 text-lg font-bold"
+                                        id="no-conflicts-state">
+                                        <span class="material-symbols-outlined text-xl">check_circle</span><span>No
+                                            Conflicts Found</span>
+                                    </div>
+                                    <div class="status-conflicts-found hidden" id="conflicts-state">
+                                        <button
+                                            class="review-conflicts-button flex items-center justify-center gap-2 bg-yellow-100 dark:bg-yellow-900/40 py-3 px-4 rounded-lg text-yellow-700 dark:text-yellow-300 text-lg font-bold w-full hover:bg-yellow-200 dark:hover:bg-yellow-800/50 transition-colors duration-200"
+                                            id="review-conflicts-button">
+                                            <span class="material-symbols-outlined text-xl">warning</span>
+                                            <span>4 Conflicts Found - Review Now</span>
+                                        </button>
+                                        <div class="hidden mt-4 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-left max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-600"
+                                            id="conflict-list">
+                                            <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                                                Detailed Conflicts:</h4>
+                                            <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                                                <li class="flex items-start gap-2">
+                                                    <span
+                                                        class="material-symbols-outlined text-base text-yellow-500">arrow_right</span>
+                                                    <span>Q1.A: TA1 &amp; TA2 scores differ by 15%</span>
+                                                </li>
+                                                <li class="flex items-start gap-2">
+                                                    <span
+                                                        class="material-symbols-outlined text-base text-yellow-500">arrow_right</span>
+                                                    <span>Q2.B: AI confidence significantly deviates from TA3's
+                                                        grade</span>
+                                                </li>
+                                                <li class="flex items-start gap-2">
+                                                    <span
+                                                        class="material-symbols-outlined text-base text-yellow-500">arrow_right</span>
+                                                    <span>Q3.C: Unexplained score change in 3 student submissions</span>
+                                                </li>
+                                                <li class="flex items-start gap-2">
+                                                    <span
+                                                        class="material-symbols-outlined text-base text-yellow-500">arrow_right</span>
+                                                    <span>Q1.B: TA4's feedback inconsistent with rubric keywords</span>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr class="border-gray-200 dark:border-gray-700" />
+                            <div class="flex flex-col">
+                                <div id="rubric-evaluator-process" class="flex items-center gap-4 mb-2">
+                                    <button aria-label="Run Rubric Change Evaluator"
+                                        class="process-run-btn flex items-center justify-center w-10 h-10 text-white bg-primary rounded-full hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-background-dark transition-colors duration-200 flex-shrink-0">
+                                        <span class="material-symbols-outlined text-xl">play_arrow</span>
+                                    </button>
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between gap-2">
+                                            <p class="text-base font-medium text-gray-700 dark:text-gray-300">Rubric
+                                                Change Evaluator</p>
+                                            <div class="info-tooltip-container">
+                                                <span
+                                                    class="material-symbols-outlined text-base text-gray-500 dark:text-gray-400 cursor-help">info</span>
+                                                <div
+                                                    class="info-tooltip absolute bottom-full right-0 mb-2 w-64 bg-gray-900 text-white text-xs rounded py-1 px-2 z-10 shadow-lg -translate-x-1/2 left-1/2">
+                                                    Analyzes the impact of a proposed rubric change by simulating
+                                                    regrading and highlighting submissions with significant score
+                                                    differences.</div>
+                                            </div>
+                                        </div>
+                                        <div
+                                            class="last-run-container flex items-center text-xs text-gray-500 dark:text-gray-400">
+                                            <span class="material-symbols-outlined text-sm mr-1">schedule</span>
+                                            <span class="last-run-time"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="w-full text-center status-display-container">
+                                    <span
+                                        class="status-unavailable text-lg font-bold flex items-center justify-center gap-1 bg-gray-100 dark:bg-gray-900/40 py-2 px-3 rounded-lg text-gray-500 dark:text-gray-400"><span
+                                            class="material-symbols-outlined text-base">block</span>Unavailable</span>
+                                    <span
+                                        class="status-ready hidden text-lg font-bold flex items-center justify-center gap-1 bg-green-100 dark:bg-green-900/40 py-2 px-3 rounded-lg"><span
+                                            class="material-symbols-outlined text-base">task_alt</span>Ready</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-xl font-semibold mb-6 text-gray-900 dark:text-white">Task Allocation</h2>
+                    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                        <div class="space-y-4 xl:col-span-1" id="available-exam-items-container">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">Available Exam Items</h3>
+                            <div class="space-y-3 pr-2 -mr-2 max-h-[70vh] overflow-y-auto"
+                                id="available-exam-items-list"></div>
+                            <div
+                                class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-600 dark:text-gray-400">
+                                <div class="flex items-center">
+                                    <span class="w-3 h-3 rounded-full bg-blue-700 mr-2 dark:bg-blue-800"></span>
+                                    <span>AI Conf. High</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="w-3 h-3 rounded-full bg-blue-600 mr-2 dark:bg-blue-600"></span>
+                                    <span>AI Conf. Med</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="w-3 h-3 rounded-full bg-blue-400 mr-2 dark:bg-blue-500"></span>
+                                    <span>AI Conf. Low</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <span class="w-3 h-3 rounded-full bg-[#22C55E] mr-2"></span>
+                                    <span>Manual Grades</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="space-y-4 xl:col-span-2 @container" id="ta-workload-container">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">TA Workload</h3>
+                            <div class="grid grid-cols-1 @md:grid-cols-2 gap-4">
+                                <!-- TA Workload items will be rendered here by renderTaskAllocation -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div
+                    class="fixed right-0 top-0 h-full w-80 bg-white dark:bg-gray-900 shadow-lg p-6 flex flex-col border-l border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Activity Feed</h2>
+                        <button id="toggle-archive-view-btn"
+                            class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                            title="View Archived">
+                            <span class="material-symbols-outlined">archive</span>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto space-y-4 pr-2 -mr-2">
+                        <div id="activity-feed-list" class="space-y-4">
+                            <div class="text-center text-gray-500 dark:text-gray-400 text-sm py-4"
+                                id="activity-feed-placeholder">No broadcasts yet.</div>
+                        </div>
+                    </div>
+                    <div class="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div id="activity-form-container" class="hidden">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-3">Create New Entry</h3>
+                            <form id="activity-feed-form" class="space-y-3">
+                                <input type="text" id="activity-title" placeholder="Title"
+                                    class="w-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-primary focus:border-primary"
+                                    required>
+                                <textarea id="activity-description" placeholder="Description..." rows="3"
+                                    class="w-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-primary focus:border-primary"
+                                    required></textarea>
+                                <select id="activity-type"
+                                    class="w-full bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-primary focus:border-primary">
+                                    <option value="Information">Information (Blue)</option>
+                                    <option value="Announcement">Announcement (Red)</option>
+                                    <option value="Suggestion">Suggestion (Yellow)</option>
+                                    <!-- Add more types as needed -->
+                                </select>
+                                <div class="flex gap-2 pt-1">
+                                    <button type="button" id="cancel-activity-form-btn"
+                                        class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium rounded-lg shadow-sm hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 dark:focus:ring-offset-background-dark transition-colors duration-200 text-sm">
+                                        Cancel
+                                    </button>
+                                    <button type="submit"
+                                        class="w-full px-4 py-2 bg-primary text-white font-medium rounded-lg shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background-dark transition-colors duration-200 text-sm">
+                                        Post Broadcast
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <button id="show-activity-form-btn"
+                            class="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium rounded-lg shadow-sm hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background-dark transition-colors duration-200 text-sm">
+                            <span class="material-symbols-outlined text-base">add</span> Create Broadcast
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Resource Management Modal -->
+                <div id="resources-modal"
+                    class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-7xl h-[95vh] flex flex-col"
+                        id="exam-repository-container">
+                        <!-- Modal Header -->
+                        <div
+                            class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+                            <div class="flex items-center gap-4">
+                                <span class="material-symbols-outlined text-primary text-3xl">folder_managed</span>
+                                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Exam Repository</h2>
+                                <select id="exam-repository-selector"
+                                    class="form-select bg-gray-100 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-200 rounded-md focus:ring-primary focus:border-primary text-sm p-2">
+                                    <option value="" selected disabled>-- Select a Repository --</option>
+                                    <option value="dummy-repository">Dummy Repository (for testing)</option>
+                                    <option value="testing-exam">Testing Exam</option>
+                                    <option value="final-exam-2024-math">Final Exam 2024 (Math)</option>
+                                    <option value="midterm-exam-2024-physics">Midterm 2024 (Physics)</option>
+                                    <option value="quiz-1-2024-cs">Quiz 1 2024 (CS)</option>
+                                    <option value="final-exam-2023-history">Final Exam 2023 (History)</option>
+                                    <option value="new" disabled>-- Create New Repository --</option>
+                                </select>
+                            </div>
+                            <button id="close-resources-modal"
+                                class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <!-- Modal Body -->
+                        <div class="flex-1 flex flex-col overflow-hidden">
+                            <!-- Tab Buttons -->
+                            <div class="px-4 border-b border-gray-200 dark:border-gray-700">
+                                <nav class="flex gap-4" id="repository-tabs">
+                                    <button data-tab="exam-questions"
+                                        class="repository-tab-btn text-primary border-primary bg-primary/10 px-3 py-2 text-sm font-medium border-b-2">Exam
+                                        & Questions</button>
+                                    <button data-tab="rubrics-references"
+                                        class="repository-tab-btn text-gray-500 dark:text-gray-400 border-transparent hover:text-primary px-3 py-2 text-sm font-medium border-b-2">Rubrics
+                                        & References</button>
+                                    <button data-tab="student-submissions"
+                                        class="repository-tab-btn text-gray-500 dark:text-gray-400 border-transparent hover:text-primary px-3 py-2 text-sm font-medium border-b-2">Student
+                                        Submissions</button>
+                                </nav>
+                            </div>
+
+                            <!-- Tab Content -->
+                            <div id="exam-questions-tab" class="repository-tab-content flex-1 flex overflow-hidden">
+                                <!-- Left Panel: Exam Template & Checkpoints -->
+                                <div class="w-3/5 flex flex-col border-r border-gray-200 dark:border-gray-700">
+                                    <div
+                                        class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                                        <h3 class="text-lg font-semibold">Exam Template Preview</h3>
+                                        <div class="flex items-center gap-2">
+                                            <button id="save-checkpoints-btn"
+                                                class="px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:bg-blue-600 transition-colors flex items-center gap-1.5">
+                                                <span class="material-symbols-outlined text-base">save</span>
+                                                Save Checkpoints
+                                            </button>
+                                            <label
+                                                class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer">
+                                                <span>Upload New Exam</span>
+                                                <input type="file" id="exam-template-upload" class="hidden"
+                                                    accept=".pdf">
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div id="exam-template-panel"
+                                        class="flex-1 overflow-auto bg-gray-100 dark:bg-gray-900 p-4">
+                                        <div id="exam-template-viewer-container" class="relative">
+                                            <!-- PDF will be rendered here -->
+                                            <div id="exam-template-overlay"
+                                                class="absolute inset-0 z-10 pointer-events-auto">
+                                                <!-- Checkpoints will be added here -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Right Panel: Question Breakdown -->
+                                <div class="w-2/5 flex flex-col">
+                                    <div
+                                        class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                                        <h3 class="text-lg font-semibold">Question Breakdown</h3>
+                                        <button id="add-question-btn"
+                                            class="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-sm font-medium rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Add
+                                            Question</button>
+                                    </div>
+                                    <div id="question-breakdown-panel" class="flex-1 p-4 space-y-3 overflow-y-auto">
+                                        <!-- Question items will be dynamically added here -->
+                                        <div class="text-center text-gray-500 dark:text-gray-400 pt-8">No questions
+                                            defined yet.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="rubrics-references-tab"
+                                class="repository-tab-content hidden flex-1 grid grid-cols-2 gap-px bg-gray-200 dark:bg-gray-700 overflow-y-auto">
+                                <!-- Rubrics Panel -->
+                                <div class="flex flex-col bg-white dark:bg-gray-800">
+                                    <div
+                                        class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                                        <h3 class="text-lg font-semibold">Grading Rubrics</h3>
+                                        <label
+                                            class="px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:bg-blue-600 transition-colors cursor-pointer">
+                                            Upload Rubric
+                                            <input type="file" id="rubrics-upload" class="hidden" accept=".pdf"
+                                                multiple>
+                                        </label>
+                                    </div>
+                                    <div class="flex-1 p-4 space-y-3 overflow-y-auto">
+                                        <div
+                                            class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg flex justify-between items-center">
+                                            <div>
+                                                <p class="font-medium">Q1_Rubric_v2.pdf</p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">Uploaded: 2024-05-20
+                                                </p>
+                                            </div>
+                                            <button class="p-1 text-gray-400 hover:text-red-500"><span
+                                                    class="material-symbols-outlined text-base">delete</span></button>
+                                        </div>
+                                        <div
+                                            class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg flex justify-between items-center">
+                                            <div>
+                                                <p class="font-medium">General_Rubric_v1.pdf</p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">Uploaded: 2024-05-18
+                                                </p>
+                                            </div>
+                                            <button class="p-1 text-gray-400 hover:text-red-500"><span
+                                                    class="material-symbols-outlined text-base">delete</span></button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Reference Materials Panel -->
+                                <div class="flex flex-col bg-white dark:bg-gray-800">
+                                    <div
+                                        class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                                        <h3 class="text-lg font-semibold">Reference Materials</h3>
+                                        <label
+                                            class="px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:bg-blue-600 transition-colors cursor-pointer">
+                                            Upload Material
+                                            <input type="file" id="references-upload" class="hidden" accept=".pdf"
+                                                multiple>
+                                        </label>
+                                    </div>
+                                    <div class="flex-1 p-4 space-y-3 overflow-y-auto">
+                                        <div
+                                            class="p-4 border border-gray-200 dark:border-gray-700 rounded-lg flex justify-between items-center">
+                                            <div>
+                                                <p class="font-medium">Lecture_Notes_Ch5.pdf</p>
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">Uploaded: 2024-05-10
+                                                </p>
+                                            </div>
+                                            <button class="p-1 text-gray-400 hover:text-red-500"><span
+                                                    class="material-symbols-outlined text-base">delete</span></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="student-submissions-tab"
+                                class="repository-tab-content hidden flex-1 flex flex-col p-6 overflow-y-auto">
+                                <h3 class="text-lg font-semibold mb-3">Student Submissions</h3>
+                                <div
+                                    class="p-6 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-center mb-6">
+                                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Drag & drop student exam
+                                        PDFs here or click to upload.</p>
+                                    <label
+                                        class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-blue-600 transition-colors cursor-pointer">
+                                        Upload Submissions
+                                        <input type="file" id="student-submissions-upload" class="hidden" accept=".pdf"
+                                            multiple>
+                                    </label>
+                                </div>
+                                <div class="flex-1 space-y-2">
+                                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Uploaded Files (3):
+                                    </p>
+                                    <div
+                                        class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg flex justify-between items-center">
+                                        <p class="font-mono text-sm">student_101_exam.pdf</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">1.2 MB</p>
+                                    </div>
+                                    <div
+                                        class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg flex justify-between items-center">
+                                        <p class="font-mono text-sm">student_102_exam.pdf</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">1.5 MB</p>
+                                    </div>
+                                    <div
+                                        class="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg flex justify-between items-center">
+                                        <p class="font-mono text-sm">student_103_exam.pdf</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">1.3 MB</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <script type="module">
+                import { calculateGradingStats } from './assets/js/grading-logic.js';
+                import { renderGradingProgress, renderQuestionBreakdown } from './assets/js/grading-visualization.js';
+
+                // Expose to global scope for legacy event handlers if needed, 
+                // though we should aim to attach listeners within the module or this script block.
+                window.calculateGradingStats = calculateGradingStats;
+                window.renderGradingProgress = renderGradingProgress;
+                window.renderQuestionBreakdown = renderQuestionBreakdown;
+
+                // --- Theme Toggle Logic ---
+                const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+                const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+                // Function to apply the theme
+                function applyTheme(theme) {
+                    if (theme === 'dark') {
+                        document.documentElement.classList.add('dark');
+                        themeToggleDarkIcon.classList.add('hidden');
+                        themeToggleLightIcon.classList.remove('hidden');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                        themeToggleDarkIcon.classList.remove('hidden');
+                        themeToggleLightIcon.classList.add('hidden');
+                    }
+                }
+
+                // Check for saved theme in localStorage or use system preference
+                const savedTheme = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const currentTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+                applyTheme(currentTheme);
+
+                // Add event listener for the toggle button
+                const themeToggleBtn = document.getElementById('theme-toggle');
+                themeToggleBtn.addEventListener('click', function () {
+                    // if set via local storage previously
+                    if (localStorage.getItem('theme')) {
+                        const newTheme = localStorage.getItem('theme') === 'light' ? 'dark' : 'light';
+                        localStorage.setItem('theme', newTheme);
+                        applyTheme(newTheme);
+                    } else { // if NOT set via local storage previously
+                        const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+                        localStorage.setItem('theme', newTheme);
+                        applyTheme(newTheme);
+                    }
+                });
+                document.addEventListener('DOMContentLoaded', () => {
+                    // --- Session Storage Logic ---
+                    const REPO_STORAGE_KEY = 'currentRepository';
+
+                    function saveRepositoryToSession() {
+                        if (window.currentRepository) {
+                            sessionStorage.setItem(REPO_STORAGE_KEY, JSON.stringify(window.currentRepository));
+                        } else {
+                            sessionStorage.removeItem(REPO_STORAGE_KEY);
+                        }
+                    }
+
+                    function renderTaskAllocation(data) {
+                        const availableItemsList = document.getElementById('available-exam-items-list');
+                        const taWorkloadContainer = document.getElementById('ta-workload-container').querySelector('.grid');
+
+                        // Clear existing content
+                        availableItemsList.innerHTML = '';
+                        taWorkloadContainer.innerHTML = '';
+
+                        if (!data) {
+                            const placeholder = `<div class="text-center text-gray-500 dark:text-gray-400 p-8 col-span-1 xl:col-span-3">Select a repository to view task allocation.</div>`;
+                            availableItemsList.innerHTML = placeholder;
+                            return;
+                        }
+
+                        const { questions, taskAllocation } = data;
+                        const confidenceColorMapping = {
+                            'high': 'bg-blue-700', 'medium': 'bg-blue-600', 'low': 'bg-blue-500',
+                            'graded-once': 'bg-green-400', 'graded-2plus': 'bg-green-500', 'default': 'bg-gray-500'
+                        };
+                        const confidenceStyleMapping = {
+                            'high': '#1D4ED8', 'medium': '#2563EB', 'low': '#3B82F6',
+                            'graded-once': '#86EFAC', 'graded-2plus': '#22C55E', 'default': '#6B7280'
+                        };
+
+                        // Helper to determine confidence level string
+                        const getConfidenceLevel = (confidenceValue) => {
+                            if (confidenceValue >= 80) return 'high';
+                            if (confidenceValue >= 60) return 'medium';
+                            return 'low';
+                        };
+
+                        // Render Available Exam Items
+                        questions.forEach(question => {
+                            const questionGroup = document.createElement('div');
+                            questionGroup.className = 'subquestion-group border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm';
+
+                            // Parse question name to remove "Qx: " prefix if present
+                            let displayName = question.name;
+                            const nameParts = question.name.split(':');
+                            if (nameParts.length > 1) {
+                                displayName = nameParts.slice(1).join(':').trim();
+                            }
+
+                            const questionGroupHeader = `
+                    <div class="subquestion-group-header">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-medium text-gray-700 dark:text-gray-300" data-question-id="${question.id}">${displayName}</span>
+                        </div>
+                    </div>
+                `;
+                            questionGroup.innerHTML = questionGroupHeader;
+
+                            const contentDiv = document.createElement('div');
+                            contentDiv.className = 'subquestion-group-content flex flex-col gap-2';
+                            contentDiv.dataset.questionId = question.id;
+
+                            const wholeTaskContainer = document.createElement('div');
+                            wholeTaskContainer.className = 'flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-2';
+
+                            ['first', 'second'].forEach(version => {
+                                const isAssigned = taskAllocation.tas.some(ta => ta.tasks.some(task => task.taskId === question.id && task.version === version));
+                                const confidenceVal = question.progress.aiHigh; // Using AI High confidence as proxy for question confidence
+                                const confidence = getConfidenceLevel(confidenceVal);
+                                const colorClass = confidenceColorMapping[confidence] || confidenceColorMapping['default'];
+                                const styleColor = confidenceStyleMapping[confidence] || confidenceStyleMapping['default'];
+                                const iterationClass = version === 'second' ? 'subsequent-iteration-pattern' : '';
+                                const iterationText = version === 'first' ? '1st Rev' : '2nd Rev';
+
+                                const taskSpan = document.createElement('span');
+                                taskSpan.className = `task-label draggable-task ${iterationClass} ${colorClass} ${isAssigned ? 'is-assigned' : ''}`;
+                                taskSpan.dataset.confidence = confidence;
+                                taskSpan.dataset.questionId = question.id;
+                                taskSpan.dataset.taskId = question.id;
+                                taskSpan.dataset.taskType = 'whole';
+                                taskSpan.dataset.version = version;
+                                taskSpan.draggable = !isAssigned;
+                                taskSpan.style.setProperty('--task-bg-color', styleColor);
+                                taskSpan.innerHTML = `<span>${question.id} (Whole)<span class="iteration-badge">${iterationText}</span></span><span class="task-points"></span>`;
+                                wholeTaskContainer.appendChild(taskSpan);
+                            });
+                            contentDiv.appendChild(wholeTaskContainer);
+
+                            if (question.subquestions) {
+                                question.subquestions.forEach(subquestion => {
+                                    const subquestionDiv = document.createElement('div');
+                                    subquestionDiv.className = 'flex flex-wrap gap-2';
+
+                                    ['first', 'second'].forEach(version => {
+                                        const taskInfo = taskAllocation.tasks.find(t => t.taskId === subquestion.id && t.version === version);
+                                        // Fallback if taskInfo is missing (shouldn't happen with correct data)
+                                        const confidenceVal = taskInfo ? taskInfo.confidence : 0;
+                                        const confidence = getConfidenceLevel(confidenceVal);
+
+                                        const isAssigned = taskInfo ? taskInfo.assigned : false;
+                                        const colorClass = confidenceColorMapping[confidence] || confidenceColorMapping['default'];
+                                        const styleColor = confidenceStyleMapping[confidence] || confidenceStyleMapping['default'];
+                                        const iterationClass = version === 'second' ? 'subsequent-iteration-pattern' : '';
+                                        const iterationText = version === 'first' ? '1st Rev' : '2nd Rev';
+
+                                        const taskSpan = document.createElement('span');
+                                        taskSpan.className = `task-label draggable-task ${iterationClass} ${colorClass} ${isAssigned ? 'is-assigned' : ''}`;
+                                        taskSpan.dataset.confidence = confidence;
+                                        taskSpan.dataset.questionId = question.id;
+                                        taskSpan.dataset.taskId = subquestion.id;
+                                        taskSpan.dataset.taskType = 'sub';
+                                        taskSpan.dataset.version = version;
+                                        taskSpan.draggable = !isAssigned;
+                                        taskSpan.style.setProperty('--task-bg-color', styleColor);
+                                        taskSpan.innerHTML = `<span>${subquestion.name}<span class="iteration-badge">${iterationText}</span></span><span class="task-points"></span>`;
+                                        subquestionDiv.appendChild(taskSpan);
+                                    });
+                                    contentDiv.appendChild(subquestionDiv);
+                                });
+                            }
+                            questionGroup.appendChild(contentDiv);
+                            availableItemsList.appendChild(questionGroup);
+                        });
+
+                        // Render TA Workload
+                        taskAllocation.tas.forEach(ta => {
+                            // Reset TA points from the data
+                            taPoints[ta.id] = ta.workload;
+                            const taBlock = document.createElement('div');
+                            taBlock.className = 'bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg shadow-sm flex flex-col';
+                            const progress = Math.min(100, (ta.workload / ta.maxWorkload) * 100);
+
+                            taBlock.innerHTML = `
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center">
+                            <!-- Removed blue circle avatar as requested -->
+                            <h4 class="font-semibold text-gray-800 dark:text-gray-200" contenteditable="true" spellcheck="false">${ta.name}</h4>
+                        </div>
+                        <span class="text-sm font-medium text-gray-600 dark:text-gray-400" id="${ta.id.toLowerCase()}-points">${ta.workload} pts</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-600 mb-3">
+                        <div class="bg-primary h-2.5 rounded-full" id="${ta.id.toLowerCase()}-progress" style="width: ${progress}%;" title="${progress.toFixed(0)}% workload"></div>
+                    </div>
+                    <ol class="drop-zone ta-task-list p-2 py-4 rounded-md bg-white dark:bg-gray-800 min-h-[100px]" data-ta-id="${ta.id}"></ol>
+                `;
+
+                            const taskList = taBlock.querySelector('ol');
+                            ta.tasks.forEach(assignedTask => {
+                                let taskInfo = taskAllocation.tasks.find(t => t.taskId === assignedTask.taskId && t.version === assignedTask.version);
+                                const questionForTask = questions.find(q => q.id === assignedTask.taskId || (q.subquestions && q.subquestions.some(sq => sq.id === assignedTask.taskId)));
+                                const isWholeTask = questionForTask && questionForTask.id === assignedTask.taskId;
+
+                                const listItem = document.createElement('li');
+                                if (taskInfo && !isWholeTask) { // This is a sub-task
+                                    const questionInfo = questions.find(q => q.subquestions && q.subquestions.some(sq => sq.id === assignedTask.taskId));
+                                    if (!questionInfo) return;
+
+                                    const confidence = getConfidenceLevel(taskInfo.confidence);
+                                    const colorClass = confidenceColorMapping[confidence] || confidenceColorMapping['default'];
+                                    const styleColor = confidenceStyleMapping[confidence] || confidenceStyleMapping['default'];
+                                    const iterationClass = taskInfo.version === 'second' ? 'subsequent-iteration-pattern' : '';
+                                    const iterationText = taskInfo.version === 'first' ? '1st Rev' : '2nd Rev';
+
+                                    listItem.innerHTML = `
+                            <span class="task-order-number"></span>
+                            <span class="task-label ${iterationClass} ${colorClass}" data-question-id="${questionInfo.id}" data-task-id="${taskInfo.taskId}" data-task-type="sub" data-version="${taskInfo.version}" style="--task-bg-color: ${styleColor};">
+                                <span>${taskInfo.taskId}<span class="iteration-badge">${iterationText}</span></span><span class="task-points"></span>
+                            </span>`;
+                                    taskList.appendChild(listItem);
+
+                                } else if (isWholeTask) { // This is a "whole" task
+                                    const questionInfo = questions.find(q => q.id === assignedTask.taskId);
+                                    if (!questionInfo) return;
+
+                                    const confidence = getConfidenceLevel(questionInfo.progress.aiHigh);
+                                    const colorClass = confidenceColorMapping[confidence] || confidenceColorMapping['default'];
+                                    const styleColor = confidenceStyleMapping[confidence] || confidenceStyleMapping['default'];
+                                    const iterationText = assignedTask.version === 'first' ? '1st Rev' : '2nd Rev';
+                                    const iterationClass = assignedTask.version === 'second' ? 'subsequent-iteration-pattern' : '';
+
+                                    listItem.innerHTML = `
+                            <span class="task-order-number"></span>
+                            <span class="task-label ${iterationClass} ${colorClass}" data-question-id="${questionInfo.id}" data-task-id="${questionInfo.id}" data-task-type="whole" data-version="${assignedTask.version}" style="--task-bg-color: ${styleColor};">
+                                <span>${questionInfo.id} (Whole)<span class="iteration-badge">${iterationText}</span></span><span class="task-points"></span>
+                            </span>`;
+                                    taskList.appendChild(listItem);
+                                }
+                            });
+
+                            taWorkloadContainer.appendChild(taBlock);
+                        });
+
+                        // Re-initialize all event listeners for drag-and-drop, etc.
+                        // This is a critical step.
+                        initializeDragAndDrop();
+                    }
+
+                    /**
+                     * Initializes the drag and drop functionality for the task allocation system.
+                     * Sets up event listeners for draggable tasks and drop zones, and initializes
+                     * the state of the UI based on current assignments.
+                     */
+                    function initializeDragAndDrop() {
+                        const draggableTasks = document.querySelectorAll('.draggable-task');
+                        const dropZones = document.querySelectorAll('.drop-zone');
+
+                        // Clean up old listeners by cloning nodes (simple way to remove listeners)
+                        dropZones.forEach(zone => {
+                            const newZone = zone.cloneNode(true);
+                            zone.parentNode.replaceChild(newZone, zone);
+                        });
+
+                        // Re-select fresh zones and attach listeners
+                        const freshDropZones = document.querySelectorAll('.drop-zone');
+                        freshDropZones.forEach(zone => addDropZoneListeners(zone));
+
+                        // Initialize draggable items
+                        draggableTasks.forEach(task => makeTaskDraggable(task));
+
+                        // Re-initialize other dynamic parts
+                        populateTaskPoints();
+
+                        // Apply initial availability state based on what is already assigned
+                        document.querySelectorAll('.draggable-task.is-assigned').forEach(task => updateAvailabilityOnAssign(task));
+
+                        // Initialize drop zones for existing TA tasks
+                        // We iterate over the DOM elements to find active TAs instead of relying on a fixed list
+                        document.querySelectorAll('.drop-zone[data-ta-id]').forEach(dropZone => {
+                            const taId = dropZone.dataset.taId;
+                            if (taPoints[taId] === undefined) {
+                                taPoints[taId] = 0; // Initialize if not present
+                            }
+                            updateTaskOrderNumbers(dropZone);
+                            dropZone.querySelectorAll('li').forEach(item => makeTaskDraggable(item));
+                        });
+
+                        // Initial progress bar update
+                        updateAllProgressBars();
+
+                        // Setup return-to-pool zones (the question containers)
+                        document.querySelectorAll('.subquestion-group-content').forEach(pool => addReturnToPoolListeners(pool));
+                    }
+
+                    // Toggle for Grading Consistency Checker conflicts
+                    const studentScoreSlider = document.getElementById('student-score');
+                    if (studentScoreSlider) {
+                        studentScoreSlider.addEventListener('input', (e) => {
+                            const value = parseInt(e.target.value);
+                            studentScoreSlider.nextElementSibling.textContent = `${value}%`;
+                            if (window.currentRepository) {
+                                window.currentRepository.appState.gradingParameters.studentScoreThreshold = value;
+                                saveRepositoryToSession();
+                                updateGradingVisualizations();
+                            }
+                        });
+                    }
+
+                    const aiConfidenceSlider = document.getElementById('ai-confidence');
+                    if (aiConfidenceSlider) {
+                        aiConfidenceSlider.addEventListener('input', (e) => {
+                            const value = parseInt(e.target.value);
+                            aiConfidenceSlider.nextElementSibling.textContent = `${value}%`;
+                            localStorage.setItem('aiConfidenceThreshold', value); // Keep for grading.html compatibility
+                            if (window.currentRepository) {
+                                window.currentRepository.appState.gradingParameters.aiConfidenceThreshold = value;
+                                saveRepositoryToSession();
+                                updateGradingVisualizations();
+                            }
+                        });
+                    }
+
+                    document.getElementById('attention-toggle').addEventListener('change', (e) => {
+                        if (window.currentRepository) {
+                            window.currentRepository.appState.gradingParameters.highlightAIAttention = e.target.checked;
+                            saveRepositoryToSession();
+                        }
+                    });
+
+                    document.getElementById('reasoning-toggle').addEventListener('change', (e) => {
+                        if (window.currentRepository) {
+                            window.currentRepository.appState.gradingParameters.showAIReasoning = e.target.checked;
+                            saveRepositoryToSession();
+                        }
+                    });
+
+                    const reviewConflictsButton = document.getElementById('review-conflicts-button');
+                    const conflictList = document.getElementById('conflict-list');
+                    const noConflictsState = document.getElementById('no-conflicts-state');
+
+                    if (reviewConflictsButton) {
+                        reviewConflictsButton.addEventListener('click', () => {
+                            conflictList.classList.toggle('hidden');
+                            if (!conflictList.classList.contains('hidden')) {
+                                conflictList.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+                        });
+                    }
+
+                    // Global state for TA points
+                    // This is now dynamically populated based on the loaded repository data
+                    let taPoints = {};
+
+                    let draggedElement = null;
+                    let dropHandled = false;
+
+                    /**
+                     * Populates the point values for each task label based on the repository data.
+                     * Also stores the points in the DOM element's dataset.
+                     */
+                    function populateTaskPoints() {
+                        document.querySelectorAll('.task-label').forEach(label => {
+                            const version = label.dataset.version;
+                            const taskType = label.dataset.taskType;
+                            let points = 0;
+                            const questionId = label.dataset.questionId;
+                            const taskId = label.dataset.taskId;
+
+                            if (window.currentRepository) {
+                                const question = window.currentRepository.questions.find(q => q.id === questionId);
+
+                                if (taskType === 'whole') {
+                                    // If a question has subquestions, sum their points.
+                                    // Otherwise, use the points of the question itself.
+                                    if (question && question.subquestions && question.subquestions.length > 0) {
+                                        points = question.subquestions.reduce((sum, sq) => sum + (sq.points || 0), 0);
+                                    } else if (question) {
+                                        points = question.points || 0;
+                                    }
+                                } else if (taskType === 'sub' && question && question.subquestions) {
+                                    const subquestion = question.subquestions.find(sq => sq.id === taskId);
+                                    if (subquestion) {
+                                        points = subquestion.points || 0;
+                                    }
+                                }
+                            }
+
+                            const pointsElement = label.querySelector('.task-points');
+                            if (points && pointsElement) {
+                                pointsElement.textContent = `${points} pts`;
+                            }
+
+                            // Store points in the element's dataset for easy access later
+                            label.dataset.points = points;
+                        });
+                    }
+
+                    /**
+                     * Updates the workload display for a specific TA.
+                     * Triggers a global update of all progress bars to maintain relative scaling.
+                     * @param {string} taId - The ID of the TA (e.g., 'TA1').
+                     * @param {number} points - The new total points for the TA.
+                     */
+                    function updateTaWorkload(taId, points) {
+                        const pointsElement = document.getElementById(`${taId.toLowerCase()}-points`);
+                        taPoints[taId] = points; // Ensure the central state is updated
+                        if (pointsElement) {
+                            pointsElement.textContent = `${points} pts`;
+                        }
+                        // Update ALL progress bars to be relative to the max workload
+                        updateAllProgressBars();
+                    }
+
+                    /**
+                     * Updates the progress bars for all TAs.
+                     * The bars are scaled relative to the TA with the highest workload.
+                     */
+                    function updateAllProgressBars() {
+                        const allPoints = Object.values(taPoints);
+                        const maxPoints = Math.max(...allPoints, 1); // Avoid division by zero, default to 1 if all are 0
+
+                        for (const taId in taPoints) {
+                            const progressBar = document.getElementById(`${taId.toLowerCase()}-progress`);
+                            if (progressBar) {
+                                const points = taPoints[taId] || 0;
+                                const percentage = (points / maxPoints) * 100;
+                                progressBar.style.width = `${percentage}%`;
+                                progressBar.setAttribute('title', `${percentage.toFixed(0)}% relative workload`);
+                            }
+                        }
+                    }
+
+                    /**
+                     * Updates the order numbers (1., 2., etc.) for tasks in a TA's list.
+                     * @param {HTMLElement} dropZoneElement - The drop zone container.
+                     */
+                    function updateTaskOrderNumbers(dropZoneElement) {
+                        const tasks = dropZoneElement.querySelectorAll('.ta-task-list li');
+                        tasks.forEach((item, index) => {
+                            let numberSpan = item.querySelector('.task-order-number');
+                            if (!numberSpan) {
+                                numberSpan = document.createElement('span');
+                                numberSpan.classList.add('task-order-number');
+                                item.prepend(numberSpan);
+                            }
+                            numberSpan.textContent = `${index + 1}.`;
+                        });
+                    }
+
+                    /**
+                     * Makes a task element draggable and attaches necessary event listeners.
+                     * @param {HTMLElement} taskElement - The element to make draggable.
+                     */
+                    function makeTaskDraggable(taskElement) {
+                        taskElement.setAttribute('draggable', 'true');
+                        taskElement.addEventListener('dragstart', handleDragStart);
+                        taskElement.addEventListener('dragend', handleDragEnd);
+                    }
+
+                    /**
+                     * Handles the start of a drag operation.
+                     * Sets up the data transfer object with task details.
+                     * @param {DragEvent} e - The drag event.
+                     */
+                    function handleDragStart(e) {
+                        dropHandled = false;
+                        draggedElement = this;
+                        e.dataTransfer.effectAllowed = 'move';
+
+                        if (this.classList.contains('draggable-task')) { // From Pool
+                            e.dataTransfer.setData('text/plain', JSON.stringify({
+                                source: 'pool',
+                                questionId: this.dataset.questionId,
+                                taskId: this.dataset.taskId,
+                                taskType: this.dataset.taskType,
+                                version: this.dataset.version,
+                                confidence: this.dataset.confidence
+                            }));
+                        } else { // From TA List (LI element)
+                            const taskLabel = this.querySelector('.task-label');
+                            e.dataTransfer.setData('text/plain', JSON.stringify({
+                                source: 'ta-list',
+                                taskType: taskLabel.dataset.taskType,
+                                taId: this.closest('.drop-zone').dataset.taId,
+                                questionId: taskLabel.dataset.questionId,
+                                taskId: taskLabel.dataset.taskId,
+                                version: taskLabel.dataset.version
+                            }));
+                        }
+
+                        setTimeout(() => this.classList.add('is-dragging'), 0);
+                    }
+
+                    /**
+                     * Handles the end of a drag operation.
+                     * Cleans up visual indicators and returns the task to the pool if dropped invalidly.
+                     * @param {DragEvent} e - The drag event.
+                     */
+                    function handleDragEnd(e) {
+                        this.classList.remove('is-dragging');
+                        document.querySelectorAll('.drop-indicator').forEach(ind => ind.remove());
+                        document.querySelectorAll('.drag-over').forEach(z => z.classList.remove('drag-over'));
+
+                        if (!dropHandled && draggedElement) {
+                            if (draggedElement.matches('li') && draggedElement.parentElement.classList.contains('drop-zone')) {
+                                returnTaskToPool(draggedElement);
+                            }
+                        }
+                        draggedElement = null;
+                    }
+
+                    /**
+                     * Adds dragover, dragleave, and drop listeners to a drop zone.
+                     * @param {HTMLElement} zone - The drop zone element.
+                     */
+                    function addDropZoneListeners(zone) {
+                        zone.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                            zone.classList.add('drag-over');
+
+                            const indicator = getDropIndicator(zone);
+                            const afterElement = getDragAfterElement(zone, e.clientY);
+
+                            if (afterElement == null) {
+                                zone.appendChild(indicator);
+                            } else {
+                                zone.insertBefore(indicator, afterElement);
+                            }
+                        });
+
+                        zone.addEventListener('dragleave', (e) => {
+                            if (!zone.contains(e.relatedTarget)) {
+                                zone.classList.remove('drag-over');
+                                const indicator = zone.querySelector('.drop-indicator');
+                                if (indicator) indicator.remove();
+                            }
+                        });
+
+                        zone.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            dropHandled = true;
+                            zone.classList.remove('drag-over');
+
+                            const indicator = zone.querySelector('.drop-indicator');
+                            const nextElement = indicator ? indicator.nextElementSibling : null;
+                            if (indicator) indicator.remove();
+
+                            if (!draggedElement) return;
+
+                            const dropData = JSON.parse(e.dataTransfer.getData('text/plain'));
+                            const targetTaId = zone.dataset.taId;
+
+                            if (dropData.source === 'pool') {
+                                handleDropFromPool(dropData, zone, nextElement, targetTaId);
+                            } else if (dropData.source === 'ta-list') {
+                                handleDropFromTaList(dropData, zone, nextElement, targetTaId);
+                            }
+
+                            saveRepositoryToSession();
+                        });
+                    }
+
+                    /**
+                     * Creates or retrieves the drop indicator element.
+                     * @param {HTMLElement} zone - The drop zone.
+                     * @returns {HTMLElement} The indicator element.
+                     */
+                    function getDropIndicator(zone) {
+                        let indicator = zone.querySelector('.drop-indicator');
+                        if (!indicator) {
+                            indicator = document.createElement('div');
+                            indicator.className = 'drop-indicator h-1 bg-primary rounded my-1 transition-all duration-200';
+                        }
+                        return indicator;
+                    }
+
+                    /**
+                     * Determines the element after which the dragged item should be inserted.
+                     * @param {HTMLElement} container - The drop zone container.
+                     * @param {number} y - The vertical mouse position.
+                     * @returns {HTMLElement|null} The element to insert before, or null if at the end.
+                     */
+                    function getDragAfterElement(container, y) {
+                        const draggableElements = [...container.querySelectorAll('li:not(.is-dragging)')];
+
+                        return draggableElements.reduce((closest, child) => {
+                            const box = child.getBoundingClientRect();
+                            const offset = y - box.top - box.height / 2;
+                            if (offset < 0 && offset > closest.offset) {
+                                return { offset: offset, element: child };
+                            } else {
+                                return closest;
+                            }
+                        }, { offset: Number.NEGATIVE_INFINITY }).element;
+                    }
+
+                    /**
+                     * Handles dropping a task from the available pool into a TA list.
+                     * @param {object} dropData - Data about the dragged task.
+                     * @param {HTMLElement} zone - The target drop zone.
+                     * @param {HTMLElement|null} nextElement - The element before which to insert the new task.
+                     * @param {string} targetTaId - The ID of the target TA.
+                     */
+                    function handleDropFromPool(dropData, zone, nextElement, targetTaId) {
+                        const originalTaskElement = document.querySelector(`.draggable-task[data-task-id="${dropData.taskId}"][data-version="${dropData.version}"]`);
+                        if (!originalTaskElement || originalTaskElement.classList.contains('is-assigned')) return;
+
+                        const listItem = document.createElement('li');
+                        const taskLabel = document.createElement('span');
+
+                        taskLabel.innerHTML = originalTaskElement.innerHTML;
+                        taskLabel.className = originalTaskElement.className
+                            .replace('draggable-task', 'task-label')
+                            .replace('is-dragging', '')
+                            .replace('is-assigned', '');
+                        taskLabel.style.cssText = originalTaskElement.style.cssText;
+
+                        taskLabel.dataset.questionId = dropData.questionId;
+                        taskLabel.dataset.taskId = dropData.taskId;
+                        taskLabel.dataset.version = dropData.version;
+                        taskLabel.dataset.taskType = dropData.taskType;
+                        taskLabel.dataset.points = originalTaskElement.dataset.points; // Copy points data
+
+                        listItem.appendChild(taskLabel);
+                        makeTaskDraggable(listItem);
+
+                        if (nextElement) {
+                            zone.insertBefore(listItem, nextElement);
+                        } else {
+                            zone.appendChild(listItem);
+                        }
+
+                        updateAvailabilityOnAssign(originalTaskElement);
+
+                        const pointsToAdd = parseInt(originalTaskElement.dataset.points) || 0;
+                        if (taPoints[targetTaId] === undefined) taPoints[targetTaId] = 0;
+                        taPoints[targetTaId] += pointsToAdd;
+                        updateTaWorkload(targetTaId, taPoints[targetTaId]);
+
+                        const taskInRepo = window.currentRepository.appState.taskAllocation.tasks.find(t => t.taskId === dropData.taskId && t.version === dropData.version);
+                        if (taskInRepo) {
+                            taskInRepo.assigned = true;
+                        }
+
+                        window.currentRepository.appState.taskAllocation.tas.find(ta => ta.id === targetTaId).tasks.push({ taskId: dropData.taskId, version: dropData.version });
+                        updateTaskOrderNumbers(zone);
+                    }
+
+                    /**
+                     * Handles moving a task between TA lists or reordering within the same list.
+                     * @param {object} dropData - Data about the dragged task.
+                     * @param {HTMLElement} zone - The target drop zone.
+                     * @param {HTMLElement|null} nextElement - The element before which to insert the dragged task.
+                     * @param {string} targetTaId - The ID of the target TA.
+                     */
+                    function handleDropFromTaList(dropData, zone, nextElement, targetTaId) {
+                        const sourceTaId = dropData.taId;
+                        const pointsToMove = parseInt(draggedElement.querySelector('.task-label').dataset.points) || 0;
+
+                        if (nextElement) {
+                            zone.insertBefore(draggedElement, nextElement);
+                        } else {
+                            zone.appendChild(draggedElement);
+                        }
+
+                        if (sourceTaId !== targetTaId) {
+                            if (taPoints[sourceTaId] === undefined) taPoints[sourceTaId] = 0;
+                            if (taPoints[targetTaId] === undefined) taPoints[targetTaId] = 0;
+
+                            taPoints[sourceTaId] -= pointsToMove;
+                            taPoints[targetTaId] += pointsToMove;
+                            updateTaWorkload(sourceTaId, taPoints[sourceTaId]);
+                            updateTaWorkload(targetTaId, taPoints[targetTaId]);
+
+                            const sourceTaInRepo = window.currentRepository.appState.taskAllocation.tas.find(ta => ta.id === sourceTaId);
+                            const taskIndex = sourceTaInRepo.tasks.findIndex(t => t.taskId === dropData.taskId && t.version === dropData.version);
+                            if (taskIndex > -1) {
+                                const [movedTask] = sourceTaInRepo.tasks.splice(taskIndex, 1);
+                                const targetTaInRepo = window.currentRepository.appState.taskAllocation.tas.find(ta => ta.id === targetTaId);
+                                targetTaInRepo.tasks.push(movedTask);
+                            }
+                        }
+
+                        updateTaskOrderNumbers(zone);
+                        if (sourceTaId !== targetTaId) {
+                            const sourceZone = document.querySelector(`.drop-zone[data-ta-id="${sourceTaId}"]`);
+                            if (sourceZone) updateTaskOrderNumbers(sourceZone);
+                        }
+                    }
+
+                    /**
+                     * Updates the availability of tasks when a task is assigned.
+                     * Implements global locking: assigning any version locks all conflicting tasks.
+                     * @param {HTMLElement} assignedTask - The task element that was just assigned.
+                     */
+                    function updateAvailabilityOnAssign(assignedTask) {
+                        const { questionId, taskType } = assignedTask.dataset;
+                        assignedTask.classList.add('is-assigned');
+                        assignedTask.setAttribute('draggable', 'false');
+
+                        // Global Locking Logic:
+                        // If ANY version of "Whole" is assigned -> Disable ALL subquestions (all versions)
+                        // If ANY version of "Sub" is assigned -> Disable ALL "Whole" tasks (all versions)
+
+                        if (taskType === 'whole') {
+                            // Disable ALL subquestions for this question, regardless of version
+                            document.querySelectorAll(`.draggable-task[data-question-id="${questionId}"][data-task-type="sub"]`).forEach(subTask => {
+                                subTask.classList.add('is-unavailable');
+                                subTask.setAttribute('draggable', 'false');
+                            });
+                        } else if (taskType === 'sub') {
+                            // Disable ALL whole question tasks for this question, regardless of version
+                            document.querySelectorAll(`.draggable-task[data-question-id="${questionId}"][data-task-type="whole"]`).forEach(wholeTask => {
+                                wholeTask.classList.add('is-unavailable');
+                                wholeTask.setAttribute('draggable', 'false');
+                            });
+                        }
+                    }
+
+                    /**
+                     * Updates the availability of tasks when a task is returned to the pool.
+                     * Re-enables conflicting tasks only if no other conflicts exist.
+                     * @param {object} returnedTaskData - Data about the task that was returned.
+                     */
+                    function updateAvailabilityOnReturn(returnedTaskData) {
+                        const { questionId, taskType, version, taskId } = returnedTaskData;
+
+                        const originalTask = document.querySelector(`.draggable-task[data-task-id="${taskId}"][data-version="${version}"]`);
+                        if (originalTask) {
+                            originalTask.classList.remove('is-assigned');
+                            originalTask.setAttribute('draggable', 'true');
+                        }
+
+                        // Check if we can unlock the conflicting tasks
+                        // We only unlock if NO other conflicting tasks are currently assigned.
+
+                        if (taskType === 'whole') {
+                            // A whole question was returned.
+                            // Check if ANY other "Whole" version of this question is still assigned.
+                            const anyWholeAssigned = document.querySelector(`.draggable-task[data-question-id="${questionId}"][data-task-type="whole"].is-assigned`);
+
+                            if (!anyWholeAssigned) {
+                                // No "Whole" versions are assigned anymore. Unlock ALL subquestions.
+                                document.querySelectorAll(`.draggable-task[data-question-id="${questionId}"][data-task-type="sub"]`).forEach(subTask => {
+                                    subTask.classList.remove('is-unavailable');
+                                    if (!subTask.classList.contains('is-assigned')) {
+                                        subTask.setAttribute('draggable', 'true');
+                                    }
+                                });
+                            }
+                        } else if (taskType === 'sub') {
+                            // A sub-task was returned.
+                            // Check if ANY sub-task (any version) for this question is still assigned.
+                            const anySubAssigned = document.querySelector(`.draggable-task[data-question-id="${questionId}"][data-task-type="sub"].is-assigned`);
+
+                            if (!anySubAssigned) {
+                                // No sub-tasks are assigned anymore. Unlock ALL "Whole" tasks.
+                                document.querySelectorAll(`.draggable-task[data-question-id="${questionId}"][data-task-type="whole"]`).forEach(wholeTask => {
+                                    wholeTask.classList.remove('is-unavailable');
+                                    if (!wholeTask.classList.contains('is-assigned')) {
+                                        wholeTask.setAttribute('draggable', 'true');
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    /**
+                     * Returns a task from a TA list back to the available pool.
+                     * @param {HTMLElement} taskItem - The list item (LI) element representing the task.
+                     */
+                    function returnTaskToPool(taskItem) {
+                        if (!taskItem) return;
+                        const taskLabel = taskItem.querySelector('.task-label');
+                        if (!taskLabel) return;
+
+                        const returnedTaskData = {
+                            questionId: taskLabel.dataset.questionId,
+                            taskId: taskLabel.dataset.taskId,
+                            version: taskLabel.dataset.version,
+                            taskType: taskLabel.dataset.taskType,
+                            taId: taskItem.closest('.drop-zone').dataset.taId
+                        };
+
+                        updateAvailabilityOnReturn(returnedTaskData);
+
+                        const pointsToRemove = parseInt(taskLabel.dataset.points) || 0;
+                        if (taPoints[returnedTaskData.taId] === undefined) taPoints[returnedTaskData.taId] = 0;
+                        taPoints[returnedTaskData.taId] -= pointsToRemove;
+                        updateTaWorkload(returnedTaskData.taId, taPoints[returnedTaskData.taId]);
+                        updateTaskOrderNumbers(taskItem.parentElement);
+
+                        let taskInRepo = null;
+                        if (window.currentRepository && window.currentRepository.appState && window.currentRepository.appState.taskAllocation) {
+                            taskInRepo = window.currentRepository.appState.taskAllocation.tasks.find(t => t.taskId === returnedTaskData.taskId && t.version === returnedTaskData.version);
+                        }
+
+                        if (taskInRepo) taskInRepo.assigned = false;
+                        const sourceTaInRepo = window.currentRepository.appState.taskAllocation.tas.find(ta => ta.id === returnedTaskData.taId);
+                        const taskIndex = sourceTaInRepo.tasks.findIndex(t => t.taskId === returnedTaskData.taskId && t.version === returnedTaskData.version);
+                        if (taskIndex > -1) sourceTaInRepo.tasks.splice(taskIndex, 1);
+
+                        saveRepositoryToSession();
+                        taskItem.remove();
+                    }
+
+                    /**
+                     * Adds dragover and drop listeners to a pool element, allowing tasks to be returned.
+                     * @param {HTMLElement} pool - The pool element (e.g., subquestion-group-content).
+                     */
+                    function addReturnToPoolListeners(pool) {
+                        pool.addEventListener('dragover', e => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                        });
+                        pool.addEventListener('drop', e => {
+                            e.preventDefault();
+                            dropHandled = true;
+                            if (!draggedElement || !draggedElement.matches('.drop-zone li')) return;
+
+                            returnTaskToPool(draggedElement);
+                        });
+                    }
+
+                    document.querySelectorAll('.subquestion-group-header').forEach(header => {
+                        const content = header.nextElementSibling;
+                        header.classList.remove('collapsed');
+                        content.classList.remove('collapsed');
+                    });
+
+                    // Activity Feed Form
+                    const activityFeedForm = document.getElementById('activity-feed-form');
+                    const activityFeedList = document.getElementById('activity-feed-list');
+                    const toggleArchiveViewBtn = document.getElementById('toggle-archive-view-btn');
+                    const showActivityFormBtn = document.getElementById('show-activity-form-btn');
+                    const cancelActivityFormBtn = document.getElementById('cancel-activity-form-btn');
+                    const activityFormContainer = document.getElementById('activity-form-container');
+                    let isShowingArchived = false;
+
+                    activityFeedForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+
+                        const titleInput = document.getElementById('activity-title');
+                        const descriptionInput = document.getElementById('activity-description');
+                        const typeInput = document.getElementById('activity-type');
+
+                        const title = titleInput.value.trim();
+                        const description = descriptionInput.value.trim();
+                        const type = typeInput.value;
+                        if (!title || !description || !type) {
+                            return; // Don't post empty entries
+                        }
+
+                        // Use the shared broadcast creation function
+                        const newBroadcast = createBroadcast({ title, description, type });
+                        const newEntry = renderBroadcastItem(newBroadcast);
+
+                        // The new item has its own buttons, but we need to handle static items separately.
+                        // For simplicity, we just prepend the new, fully functional item.
+                        activityFeedList.prepend(newEntry);
+
+                        saveRepositoryToSession();
+                        // Clear form
+                        titleInput.value = '';
+                        descriptionInput.value = '';
+                        typeInput.value = 'Information'; // Reset to default
+                        activityFormContainer.classList.add('hidden');
+                        showActivityFormBtn.classList.remove('hidden');
+                    });
+
+                    showActivityFormBtn.addEventListener('click', () => {
+                        activityFormContainer.classList.remove('hidden');
+                        showActivityFormBtn.classList.add('hidden');
+                    });
+
+                    cancelActivityFormBtn.addEventListener('click', () => {
+                        activityFormContainer.classList.add('hidden');
+                        showActivityFormBtn.classList.remove('hidden');
+
+                        // Clear form fields
+                        const titleInput = document.getElementById('activity-title');
+                        const descriptionInput = document.getElementById('activity-description');
+                        const typeInput = document.getElementById('activity-type');
+                        titleInput.value = '';
+                        descriptionInput.value = '';
+                        typeInput.value = 'Information';
+                    });
+
+
+                    // This function is now only for the static example items in the HTML.
+                    function setupStaticActivityItemButtons(item) {
+                        const dismissBtn = item.querySelector('.dismiss-btn');
+                        const archiveBtn = item.querySelector('.archive-btn');
+
+                        if (dismissBtn) {
+                            dismissBtn.addEventListener('click', () => item.remove());
+                        }
+                        // The archive button on static items will just hide them for the session.
+                        if (archiveBtn) {
+                            archiveBtn.addEventListener('click', () => {
+                                item.dataset.archived = "true";
+                                renderActivityFeed(); // Re-render to hide it
+                            });
+                        }
+                    }
+
+                    function renderActivityFeed() {
+                        const formAndButtonContainer = activityFormContainer.parentElement;
+                        const feedTitle = document.querySelector('.fixed.right-0 h2');
+                        const toggleIcon = toggleArchiveViewBtn.querySelector('span');
+
+                        // Enable/disable create button based on repository state
+                        const hasRepo = !!window.currentRepository;
+                        showActivityFormBtn.disabled = !hasRepo;
+                        showActivityFormBtn.classList.toggle('opacity-50', !hasRepo);
+                        showActivityFormBtn.classList.toggle('cursor-not-allowed', !hasRepo);
+
+                        // Load dynamic broadcasts based on the view
+                        loadAndDisplayBroadcasts(activityFeedList, isShowingArchived);
+
+                        if (isShowingArchived) {
+                            feedTitle.textContent = 'Archived Feed';
+                            toggleIcon.textContent = 'unarchive';
+                            toggleArchiveViewBtn.title = 'View Live Feed';
+                            formAndButtonContainer.style.display = 'none';
+                        } else {
+                            feedTitle.textContent = 'Activity Feed';
+                            toggleIcon.textContent = 'archive';
+                            toggleArchiveViewBtn.title = 'View Archived';
+                            formAndButtonContainer.style.display = '';
+                        }
+                    }
+
+                    toggleArchiveViewBtn.addEventListener('click', () => {
+                        isShowingArchived = !isShowingArchived;
+                        renderActivityFeed();
+                    });
+
+                    // Initial setup for STATIC example items. Dynamic items are handled by loadAndDisplayBroadcasts.
+                    // This will set up the static example items
+                    renderActivityFeed(); // This will call loadAndDisplayBroadcasts and manage button state
+
+                    // Tooltip logic
+                    document.querySelectorAll('.info-tooltip-container').forEach(container => {
+                        const icon = container.querySelector('.material-symbols-outlined');
+                        const tooltip = container.querySelector('.info-tooltip');
+
+                        icon.addEventListener('mouseenter', () => {
+                            tooltip.style.display = 'block';
+                        });
+
+                        icon.addEventListener('mouseleave', () => {
+                            tooltip.style.display = 'none';
+                        });
+                    });
+
+                    // --- Resource Management Modal Logic ---
+                    const resourcesModal = document.getElementById('resources-modal');
+                    const manageResourcesBtn = document.getElementById('manage-resources-btn');
+                    const closeResourcesModalBtn = document.getElementById('close-resources-modal');
+                    const examTemplatePanel = document.getElementById('exam-template-panel');
+                    const examTemplateViewerContainer = document.getElementById('exam-template-viewer-container');
+                    const examTemplateOverlay = document.getElementById('exam-template-overlay');
+                    const saveCheckpointsBtn = document.getElementById('save-checkpoints-btn');
+                    let examTemplateRendered = false; // Flag to track if the PDF has been rendered
+                    let checkpointCounter = 0;
+                    let draggedCheckpoint = null;
+                    let checkpointOffsetX = 0;
+                    let checkpointOffsetY = 0;
+                    let selectedQuestionId = null;
+
+
+
+                    const examTemplateUploadInput = document.getElementById('exam-template-upload');
+                    const CHECKPOINT_STORAGE_KEY = 'exam-template-checkpoints';
+
+                    // --- New Repository and Tab Logic ---
+                    const repositoryTabs = document.getElementById('repository-tabs');
+                    const repositoryTabContents = document.getElementById('exam-repository-container').querySelectorAll('.repository-tab-content');
+                    const questionBreakdownPanel = document.getElementById('question-breakdown-panel');
+                    const repositorySelector = document.getElementById('exam-repository-selector');
+
+                    repositoryTabs.addEventListener('click', (e) => {
+                        const button = e.target.closest('.repository-tab-btn');
+                        if (!button) return;
+
+                        // Deactivate all tabs
+                        repositoryTabs.querySelectorAll('.repository-tab-btn').forEach(btn => {
+                            btn.classList.remove('text-primary', 'border-primary', 'bg-primary/10');
+                            btn.classList.add('text-gray-500', 'dark:text-gray-400', 'border-transparent', 'hover:text-primary');
+                        });
+                        repositoryTabContents.forEach(content => content.classList.add('hidden'));
+
+                        // Activate clicked tab
+                        button.classList.add('text-primary', 'border-primary', 'bg-primary/10');
+                        button.classList.remove('text-gray-500', 'dark:text-gray-400', 'border-transparent', 'hover:text-primary');
+                        const tabId = button.dataset.tab;
+                        document.getElementById(`${tabId}-tab`).classList.remove('hidden');
+                    });
+
+                    async function loadRepositoryData(repoId) {
+                        try {
+                            let data;
+                            const savedRepoData = sessionStorage.getItem(REPO_STORAGE_KEY);
+                            const savedRepo = savedRepoData ? JSON.parse(savedRepoData) : null;
+
+                            // If the selected repo is the one already in session storage, use that.
+                            // Otherwise, fetch it from the JSON file.
+                            if (savedRepo && savedRepo.id === repoId) {
+                                console.log(`Loading repository '${repoId}' from sessionStorage.`);
+                                data = savedRepo;
+                            } else {
+                                console.log(`Fetching repository '${repoId}' from file.`);
+                                const url = `data/${repoId}.json`;
+                                const response = await fetch(url);
+                                if (!response.ok) {
+                                    throw new Error(`Could not load repository: ${response.statusText}`);
+                                }
+                                data = await response.json();
+                            }
+
+                            // Override for the testing-exam to ensure correct PDF is loaded
+                            if (repoId === 'testing-exam') {
+                                data.examTemplateUrl = 'assets/exams/Testing-exam.pdf';
+                            }
+
+                            window.currentRepository = data; // Set global repository object
+                            saveRepositoryToSession(); // Save the newly fetched or session-loaded repo to session
+
+                            // Update UI based on loaded data
+                            renderExamTemplate(data.examTemplateUrl);
+
+                            // Initial calculation and render
+                            updateGradingVisualizations();
+
+                            renderTaskAllocation({ questions: data.questions, taskAllocation: data.appState.taskAllocation });
+                            // renderQuestionBreakdown is now called within updateGradingVisualizations
+                            renderModalQuestionBreakdown(data.questions);
+                            document.getElementById('repository-name-display').textContent = data.name;
+                            // renderPredefinedCheckpoints is now called inside renderExamTemplate's success path
+                            renderAutomatedProcesses(data.appState.automatedProcesses);
+
+                            renderActivityFeed(); // Re-render activity feed with repository data
+                            console.log(`Loaded repository: ${data.name}`);
+                            renderGradingParameters(data.appState.gradingParameters);
+                        } catch (error) {
+                            window.currentRepository = null; // Clear repository on error
+                            saveRepositoryToSession();
+                            renderAutomatedProcesses(null);
+                            renderEmptyState(); // Revert to empty state on error
+                            renderTaskAllocation(null);
+                            renderGradingParameters(null); // Ensure parameters are reset on error
+                            document.getElementById('repository-name-display').textContent = 'Error Loading Repository';
+                            console.error('Failed to load repository data:', error); // Keep console error for debugging
+                            renderActivityFeed(); // Clear activity feed on error
+                            document.getElementById('question-breakdown-panel').innerHTML = `<div class="text-center text-red-500 dark:text-red-400 pt-8">Error loading repository '${repoId}'.</div>`;
+                        }
+                    }
+
+                    repositorySelector.addEventListener('change', (e) => {
+                        const selectedRepo = e.target.value;
+                        if (selectedRepo === 'new') {
+                            // Handle 'create new' logic if you implement it
+                            alert("Creating a new repository is not yet implemented.");
+                        } else if (selectedRepo) {
+                            loadRepositoryData(selectedRepo);
+                        } else {
+                            renderEmptyState();
+                        }
+                    });
+
+                    function updateGradingVisualizations() {
+                        if (!window.currentRepository) return;
+
+                        const stats = calculateGradingStats(window.currentRepository, window.currentRepository.appState.gradingParameters);
+                        if (stats) {
+                            renderGradingProgress(stats.globalStats);
+                            renderQuestionBreakdown(window.currentRepository.questions, stats.questionStats);
+                        }
+                    }
+
+
+                    function renderGradingParameters(params) {
+                        const studentScoreSlider = document.getElementById('student-score');
+                        const aiConfidenceSlider = document.getElementById('ai-confidence');
+                        const attentionToggle = document.getElementById('attention-toggle');
+                        const reasoningToggle = document.getElementById('reasoning-toggle');
+
+                        // Default values if params are missing
+                        const studentScore = params?.studentScoreThreshold ?? 50;
+                        const aiConfidence = params?.aiConfidenceThreshold ?? 50;
+
+                        if (studentScoreSlider) {
+                            studentScoreSlider.value = studentScore;
+                            studentScoreSlider.nextElementSibling.textContent = `${studentScore}%`;
+                        }
+                        if (aiConfidenceSlider) {
+                            aiConfidenceSlider.value = aiConfidence;
+                            aiConfidenceSlider.nextElementSibling.textContent = `${aiConfidence}%`;
+                        }
+                        if (attentionToggle) {
+                            attentionToggle.checked = params?.highlightAIAttention ?? false;
+                        }
+                        if (reasoningToggle) {
+                            reasoningToggle.checked = params?.showAIReasoning ?? false;
+                        }
+                        localStorage.setItem('aiConfidenceThreshold', aiConfidence); // Update localStorage
+                    }
+
+                    function renderAutomatedProcesses(processesData) {
+                        const processContainers = {
+                            aiGrading: document.getElementById('ai-grading-process'),
+                            consistencyChecker: document.getElementById('consistency-checker-process'),
+                            rubricEvaluator: document.getElementById('rubric-evaluator-process')
+                        };
+
+                        for (const key in processContainers) {
+                            const container = processContainers[key];
+                            const runBtn = container.querySelector('.process-run-btn');
+                            const lastRunContainer = container.querySelector('.last-run-container');
+                            const lastRunTimeSpan = container.querySelector('.last-run-time');
+                            const statusContainer = container.nextElementSibling;
+                            const allStatusDivs = statusContainer.querySelectorAll('[class*="status-"]');
+
+                            if (!processesData) { // Empty state
+                                runBtn.disabled = true;
+                                runBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                                lastRunContainer.classList.add('hidden');
+                                allStatusDivs.forEach(div => div.classList.add('hidden'));
+                                statusContainer.querySelector('.status-unavailable').classList.remove('hidden');
+                            } else { // Loaded state
+                                const data = processesData[key];
+                                runBtn.disabled = false;
+                                runBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+                                if (data.lastRun && data.lastRun !== 'N/A') {
+                                    lastRunTimeSpan.textContent = `Last run: ${data.lastRun}`;
+                                    lastRunContainer.classList.remove('hidden');
+                                } else {
+                                    lastRunContainer.classList.add('hidden');
+                                }
+
+                                allStatusDivs.forEach(div => div.classList.add('hidden'));
+
+                                let activeStatusDiv;
+                                if (data.status === 'conflicts-found') {
+                                    activeStatusDiv = statusContainer.querySelector('.status-conflicts-found');
+                                    const conflictBtn = activeStatusDiv.querySelector('.review-conflicts-button');
+                                    if (conflictBtn) {
+                                        conflictBtn.querySelector('span:last-child').textContent = `${data.conflictCount} Conflicts Found - Review Now`;
+                                    }
+                                } else if (data.status === 'no-conflicts') {
+                                    activeStatusDiv = statusContainer.querySelector('.status-no-conflicts');
+                                } else if (data.status === 'ready') {
+                                    activeStatusDiv = statusContainer.querySelector('.status-ready');
+                                } else {
+                                    activeStatusDiv = statusContainer.querySelector('.status-unavailable');
+                                }
+
+                                if (activeStatusDiv) {
+                                    activeStatusDiv.classList.remove('hidden');
+                                } else {
+                                    // Fallback to unavailable if a specific status div isn't found
+                                    statusContainer.querySelector('.status-unavailable').classList.remove('hidden');
+                                }
+                            }
+                        }
+                    }
+
+                    function renderModalQuestionBreakdown(questions) {
+                        const panel = document.getElementById('question-breakdown-panel');
+                        panel.innerHTML = ''; // Clear previous content
+
+                        if (!questions || questions.length === 0) {
+                            panel.innerHTML = `<div class="text-center text-gray-500 dark:text-gray-400 pt-8">No questions defined.</div>`;
+                            return;
+                        }
+
+                        // Add a header to show which question is selected
+                        const selectionHeader = document.createElement('div');
+                        selectionHeader.id = 'checkpoint-selection-header';
+                        selectionHeader.className = 'p-2 mb-2 text-sm text-center bg-gray-100 dark:bg-gray-700/50 rounded-md text-gray-600 dark:text-gray-400';
+                        selectionHeader.innerHTML = 'Select a question to manage its checkpoints.';
+                        panel.prepend(selectionHeader);
+
+                        // Render questions
+                        questions.forEach(q => {
+                            const questionElement = createQuestionElement(q);
+                            panel.appendChild(questionElement);
+                        });
+                    }
+
+                    function createQuestionElement(questionData) {
+                        const { id, name, pages, subquestions } = questionData;
+                        const isSubquestion = 'points' in questionData; // More robust check
+
+                        const questionWrapper = document.createElement('div');
+                        questionWrapper.className = isSubquestion ? 'ml-6' : '';
+                        questionWrapper.dataset.questionId = id;
+
+                        const totalPoints = isSubquestion ? questionData.points : (subquestions || []).reduce((sum, sq) => sum + sq.points, 0);
+
+                        const headerHTML = `
+                <div class="question-item-header flex items-center justify-between p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/50 cursor-pointer">
+                    <div class="flex items-center gap-2 flex-grow">
+                        <span class="material-symbols-outlined text-lg text-gray-500">${isSubquestion ? 'article' : 'folder'}</span>
+                        <input type="text" value="${name}" class="question-name-input bg-transparent border-none p-0 focus:ring-0 focus:bg-gray-200 dark:focus:bg-gray-600 rounded-sm w-full">
+                    </div>
+                    <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+                        <span class="has-checkpoints-indicator hidden inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary dark:bg-primary/30 dark:text-blue-200" title="This item has checkpoints">
+                            Checkpoints
+                        </span>
+                        <div class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-base">tag</span>
+                            <span>${totalPoints} pts</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-base">description</span>
+                            <input type="text" value="${pages || ''}" placeholder="e.g. 1-2" class="pages-input bg-transparent border-b w-16 text-center p-0 focus:ring-0 focus:border-primary">
+                        </div>
+                        <button class="delete-question-btn p-1 rounded-full hover:bg-red-500/20 text-red-500">
+                            <span class="material-symbols-outlined text-base">delete</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+                        const subquestionHTML = !isSubquestion ? `
+                <div class="subquestion-list pl-6 border-l-2 border-gray-200 dark:border-gray-700 ml-3 mt-1 space-y-1">
+                    <!-- Subquestions will be rendered here -->
+                </div>
+                <div class="pl-6 ml-3 mt-2">
+                    <button class="add-subquestion-btn text-sm text-primary hover:underline">+ Add Subquestion</button>
+                </div>
+            ` : '';
+
+                        questionWrapper.innerHTML = headerHTML + subquestionHTML;
+
+                        if (!isSubquestion && subquestions) {
+                            const subquestionList = questionWrapper.querySelector('.subquestion-list');
+                            subquestions.forEach(sq => {
+                                const subElement = createQuestionElement(sq);
+                                subquestionList.appendChild(subElement);
+                            });
+                        }
+
+                        const header = questionWrapper.querySelector('.question-item-header');
+                        header.addEventListener('click', () => {
+                            const selectionHeader = document.getElementById('checkpoint-selection-header');
+                            const hasSubquestions = !isSubquestion && subquestions && subquestions.length > 0;
+
+                            // Deselect previous
+                            const currentSelected = document.querySelector('.question-item-header.selected');
+                            if (currentSelected) {
+                                currentSelected.classList.remove('selected');
+                            }
+
+                            // Select new
+                            header.classList.add('selected');
+                            selectedQuestionId = id;
+
+                            if (hasSubquestions) {
+                                selectionHeader.innerHTML = `This question has subquestions. Please select a subquestion to add checkpoints.`;
+                                selectedQuestionId = null; // Prevent adding checkpoints to parent
+                            } else {
+                                selectionHeader.innerHTML = `Managing checkpoints for: <strong class="text-primary">${name}</strong>`;
+                                selectionHeader.innerHTML += `<br><span class="text-xs">Double-click on the exam preview to add a checkpoint.</span>`;
+                            }
+
+                            // Show only relevant checkpoints
+                            filterVisibleCheckpoints();
+                        });
+
+                        questionWrapper.querySelector('.delete-question-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (confirm(`Are you sure you want to delete "${name}"?`)) {
+                                questionWrapper.remove();
+                                // TODO: Update window.currentRepository and save
+                            }
+                        });
+
+                        if (!isSubquestion) {
+                            questionWrapper.querySelector('.add-subquestion-btn').addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                alert('Adding subquestions is not yet implemented.');
+                                // TODO: Implement logic to add a new subquestion
+                            });
+                        }
+
+                        return questionWrapper;
+                    }
+
+                    function filterVisibleCheckpoints() {
+                        examTemplateOverlay.querySelectorAll('.template-checkpoint').forEach(cp => {
+                            if (cp.dataset.questionId === selectedQuestionId) {
+                                cp.style.display = '';
+                            } else {
+                                cp.style.display = 'none';
+                            }
+                        });
+                    }
+
+                    function getCheckpointsForRepo() {
+                        if (!window.currentRepository) return [];
+                        const key = `${CHECKPOINT_STORAGE_KEY}-${window.currentRepository.id}`;
+                        return JSON.parse(localStorage.getItem(key) || '[]');
+                    }
+
+                    function saveCheckpointsForRepo() {
+                        if (!window.currentRepository) return;
+                        const key = `${CHECKPOINT_STORAGE_KEY}-${window.currentRepository.id}`;
+
+                        const allCheckpoints = JSON.parse(localStorage.getItem(key) || '[]');
+                        // Remove old checkpoints for the currently selected question
+                        const otherCheckpoints = allCheckpoints.filter(cp => cp.questionId !== selectedQuestionId);
+
+                        // Get current checkpoints from the DOM for the selected question
+                        const currentCheckpoints = [];
+                        examTemplateOverlay.querySelectorAll(`.template-checkpoint[data-question-id="${selectedQuestionId}"]`).forEach(el => {
+                            currentCheckpoints.push({ id: el.id, x: el.style.left, y: el.style.top, points: el.dataset.points, questionId: el.dataset.questionId });
+                        });
+
+                        const newCheckpoints = [...otherCheckpoints, ...currentCheckpoints];
+                        localStorage.setItem(key, JSON.stringify(newCheckpoints));
+                        alert(`Checkpoints for the current question saved!`);
+                        updateCheckpointIndicators(getCheckpointsForRepo());
+                    }
+
+                    function updateCheckpointIndicators(checkpoints) {
+                        if (!checkpoints) return;
+                        const questionIdsWithCheckpoints = new Set(checkpoints.map(cp => cp.questionId));
+
+                        document.querySelectorAll('.question-item-header').forEach(header => {
+                            const questionId = header.closest('[data-question-id]').dataset.questionId;
+                            header.querySelector('.has-checkpoints-indicator').classList.toggle('hidden', !questionIdsWithCheckpoints.has(questionId));
+                        });
+                    }
+
+                    // Event listeners for grading parameters (already existing, just ensure they work with new initial state)
+                    document.getElementById('student-score').addEventListener('input', (e) => e.target.nextElementSibling.textContent = `${e.target.value}%`);
+                    document.getElementById('ai-confidence').addEventListener('input', (e) => { e.target.nextElementSibling.textContent = `${e.target.value}%`; localStorage.setItem('aiConfidenceThreshold', e.target.value); });
+
+                    async function renderExamTemplate(pdfUrl) {
+                        const pdfjsLib = window.pdfjsLib;
+                        if (!pdfjsLib) { console.error("PDF.js library not loaded."); return; }
+                        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js`;
+
+                        // If the container is not visible, don't render. It will be rendered when the modal opens.
+                        if (examTemplatePanel.clientWidth === 0) {
+                            console.log("Exam template panel is not visible. Deferring render.");
+                            examTemplateRendered = false; // Mark as not rendered
+                            // Clear previous content in case the modal is closed and reopened without a repo change
+                            examTemplateViewerContainer.querySelectorAll('canvas').forEach(c => c.remove());
+                            return;
+                        }
+                        try {
+                            // Clear previous content
+                            examTemplateViewerContainer.querySelectorAll('canvas').forEach(c => c.remove());
+                            examTemplateOverlay.innerHTML = '';
+
+                            const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+                            const containerStyle = window.getComputedStyle(examTemplatePanel);
+                            const desiredWidth = examTemplatePanel.clientWidth - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight);
+
+                            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                                const page = await pdf.getPage(pageNum);
+
+                                const viewport = page.getViewport({ scale: 1 });
+                                const scale = desiredWidth / viewport.width;
+                                const scaledViewport = page.getViewport({ scale });
+
+                                const canvas = document.createElement('canvas');
+                                const context = canvas.getContext('2d');
+                                canvas.height = scaledViewport.height;
+                                canvas.width = scaledViewport.width;
+                                canvas.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';
+                                if (pageNum < pdf.numPages) {
+                                    canvas.style.marginBottom = '1rem'; // Add space between pages
+                                }
+
+                                await page.render({ canvasContext: context, viewport: scaledViewport }).promise;
+                                examTemplateViewerContainer.insertBefore(canvas, examTemplateOverlay);
+                            }
+                            examTemplateRendered = true; // Mark as rendered
+                            loadAllCheckpointsForRepo();
+                            filterVisibleCheckpoints(); // Hide all checkpoints on initial load
+                            renderPredefinedCheckpoints(window.currentRepository.gradingCheckpoints);
+
+                        } catch (error) {
+                            console.error('Error rendering exam template PDF:', error);
+                            examTemplateViewerContainer.innerHTML = `<div class="p-8 text-center text-red-500">Failed to load exam template. Please upload one.</div>`;
+                        }
+                    }
+
+                    function createCheckpointElement(id, x, y, points = 1, questionId) {
+                        const checkpointEl = document.createElement('div');
+                        checkpointEl.id = id;
+                        checkpointEl.className = 'template-checkpoint absolute bg-white dark:bg-gray-700 border-2 border-primary rounded-lg shadow-lg p-2 text-sm text-primary dark:text-blue-300 pointer-events-auto';
+                        checkpointEl.style.left = x;
+                        checkpointEl.style.top = y;
+                        checkpointEl.style.transform = 'translate(-50%, -50%)'; // Center the element on the coordinate
+                        checkpointEl.style.minWidth = '200px';
+                        checkpointEl.dataset.points = points;
+                        checkpointEl.dataset.questionId = questionId;
+
+                        checkpointEl.innerHTML = `
+                <div class="flex items-center justify-between gap-2">
+                    <span class="font-bold">Checkpoint ${id.split('-').pop()}</span>
+                    <div class="flex items-center gap-1">
+                        <input type="number" value="${points}" min="0" class="points-input w-12 text-center bg-transparent border-b border-primary/50 focus:ring-0 focus:border-primary p-0 text-sm appearance-none">
+                        <span>pts</span>
+                    </div>
+                    <button class="delete-checkpoint-btn p-1 rounded-full hover:bg-red-500/20 text-red-500">
+                        <span class="material-symbols-outlined text-base">delete</span>
+                    </button>
+                </div>
+            `;
+                        checkpointEl.setAttribute('draggable', 'true');
+                        checkpointEl.addEventListener('dragstart', (e) => {
+                            e.stopPropagation();
+                            draggedCheckpoint = checkpointEl;
+                            checkpointOffsetX = e.clientX - checkpointEl.getBoundingClientRect().left;
+                            checkpointOffsetY = e.clientY - checkpointEl.getBoundingClientRect().top;
+                            e.dataTransfer.effectAllowed = 'move';
+                            setTimeout(() => checkpointEl.classList.add('is-dragging'), 0);
+                        });
+
+                        checkpointEl.addEventListener('dragend', () => {
+                            if (draggedCheckpoint) {
+                                draggedCheckpoint.classList.remove('is-dragging');
+                            }
+                            draggedCheckpoint = null;
+                        });
+
+                        checkpointEl.querySelector('.delete-checkpoint-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            checkpointEl.remove();
+                        });
+
+                        checkpointEl.querySelector('.points-input').addEventListener('input', (e) => {
+                            e.stopPropagation();
+                            checkpointEl.dataset.points = e.target.value;
+                        });
+
+                        examTemplateOverlay.appendChild(checkpointEl);
+                    }
+
+                    function loadAllCheckpointsForRepo() {
+                        examTemplateOverlay.innerHTML = ''; // Clear existing
+                        const savedCheckpoints = getCheckpointsForRepo();
+                        let maxId = 0;
+                        savedCheckpoints.forEach(cp => {
+                            createCheckpointElement(cp.id, cp.x, cp.y, cp.points, cp.questionId);
+                            const idNum = parseInt(cp.id.split('-').pop());
+                            if (idNum > maxId) maxId = idNum;
+                        });
+                        checkpointCounter = maxId;
+                        updateCheckpointIndicators(savedCheckpoints);
+                    }
+
+                    function renderPredefinedCheckpoints(checkpointsData) {
+                        if (!checkpointsData || checkpointsData.length === 0) return;
+
+                        const canvases = examTemplateViewerContainer.querySelectorAll('canvas');
+                        if (canvases.length === 0) return; // Can't place checkpoints if pages aren't rendered
+
+                        checkpointsData.forEach(cp => {
+                            // Prevent re-rendering if it already exists from local storage load
+                            const existingId = `predefined-cp-${cp.questionId}`;
+                            if (document.getElementById(existingId)) return;
+
+                            const pageIndex = cp.page - 1;
+                            if (pageIndex < 0 || pageIndex >= canvases.length || !cp.position) return;
+
+                            const canvas = canvases[pageIndex];
+
+                            // Calculate position based on percentage values in the JSON
+                            const leftPx = (parseFloat(cp.position.x) / 100) * canvas.offsetWidth;
+                            const topPx = (parseFloat(cp.position.y) / 100) * canvas.offsetHeight + canvas.offsetTop;
+
+                            // Find the corresponding question to get its total points
+                            const question = window.currentRepository.questions.find(q => q.id === cp.questionId);
+                            let questionPoints = 0;
+                            if (question) {
+                                if (question.subquestions && question.subquestions.length > 0) {
+                                    // Sum of subquestion points
+                                    questionPoints = question.subquestions.reduce((sum, sq) => sum + (sq.points || 0), 0);
+                                } else {
+                                    // Points of the question itself
+                                    questionPoints = question.points || 0;
+                                }
+                            }
+
+                            // Use the existing function to create a proper, interactive checkpoint
+                            // The point value now corresponds to the question's total points.
+                            createCheckpointElement(existingId, `${leftPx}px`, `${topPx}px`, questionPoints, cp.questionId);
+
+                            // Also update the indicator in the question list
+                            const questionHeader = document.querySelector(`.question-item-header[data-question-id="${cp.questionId}"]`);
+                            if (questionHeader) {
+                                questionHeader.querySelector('.has-checkpoints-indicator').classList.remove('hidden');
+                            }
+                        });
+                    }
+
+                    manageResourcesBtn.addEventListener('click', () => {
+                        resourcesModal.classList.remove('hidden');
+                        document.body.style.overflow = 'hidden';
+                        // If the exam template hasn't been rendered yet (because the modal was hidden), render it now.
+                        const selectedRepoId = repositorySelector.value;
+                        if (window.currentRepository && !examTemplateRendered) {
+                            renderExamTemplate(window.currentRepository.examTemplateUrl);
+                        } else if (!window.currentRepository || window.currentRepository.id !== selectedRepoId) {
+                            loadRepositoryData(selectedRepoId);
+                        }
+
+                    });
+
+                    function renderEmptyState() {
+                        renderGradingProgress(null);
+                        renderQuestionBreakdown(null);
+                        renderGradingParameters(null);
+                        renderAutomatedProcesses(null);
+                        renderTaskAllocation(null);
+                        document.getElementById('repository-name-display').textContent = 'No Repository Loaded'; // Reset title
+                        renderActivityFeed(); // Render with fallback data
+                        // You can add more here to clear other parts of the UI
+                    }
+
+                    closeResourcesModalBtn.addEventListener('click', () => {
+                        resourcesModal.classList.add('hidden');
+                        document.body.style.overflow = '';
+                    });
+
+                    examTemplateOverlay.addEventListener('dblclick', (e) => {
+                        if (e.target === examTemplateOverlay && selectedQuestionId) { // Only trigger on the overlay itself and if a question is selected
+                            // Find the smallest available checkpoint number for the current question
+                            const existingNumbers = new Set();
+                            examTemplateOverlay.querySelectorAll(`.template-checkpoint[data-question-id="${selectedQuestionId}"]`).forEach(cp => {
+                                const num = parseInt(cp.id.split('-').pop(), 10);
+                                if (!isNaN(num)) {
+                                    existingNumbers.add(num);
+                                }
+                            });
+
+                            let newNumber = 1;
+                            while (existingNumbers.has(newNumber)) {
+                                newNumber++;
+                            }
+
+                            const rect = examTemplateOverlay.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const y = e.clientY - rect.top;
+                            // The ID now includes the question ID for better uniqueness and the new sequential number
+                            const newId = `cp-${selectedQuestionId}-${newNumber}`;
+                            createCheckpointElement(newId, `${x}px`, `${y}px`, 1, selectedQuestionId);
+                        }
+                    });
+
+
+                    examTemplateUploadInput.addEventListener('change', (e) => {
+                        const file = e.target.files[0];
+                        if (file && file.type === 'application/pdf') {
+                            const fileUrl = URL.createObjectURL(file);
+                            renderExamTemplate(fileUrl);
+                        }
+                    });
+
+                    examTemplatePanel.addEventListener('dragover', e => e.preventDefault());
+                    examTemplatePanel.addEventListener('drop', (e) => {
+                        e.preventDefault();
+                        if (draggedCheckpoint) {
+                            const rect = examTemplatePanel.getBoundingClientRect();
+                            draggedCheckpoint.style.left = `${e.clientX - rect.left + examTemplatePanel.scrollLeft - checkpointOffsetX}px`;
+                            draggedCheckpoint.style.top = `${e.clientY - rect.top + examTemplatePanel.scrollTop - checkpointOffsetY}px`;
+                        }
+                    });
+
+                    saveCheckpointsBtn.addEventListener('click', saveCheckpointsForRepo);
+
+                    // --- Initial Page Load ---
+                    const savedRepoData = sessionStorage.getItem(REPO_STORAGE_KEY);
+                    if (savedRepoData) {
+                        try {
+                            const data = JSON.parse(savedRepoData);
+                            repositorySelector.value = data.id; // Set the dropdown to the saved repo
+                            loadRepositoryData(data.id); // This will re-render everything with the saved state
+                        } catch (e) {
+                            console.error("Failed to parse saved repository data from sessionStorage.", e);
+                            renderEmptyState();
+                        }
+                    } else {
+                        // Initial render of the empty state if nothing is in session
+                        renderEmptyState();
+                    }
+                });
+            </script>
+        </div>
+    </div>
+    <script src="broadcast.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
+</body>
+
+</html>

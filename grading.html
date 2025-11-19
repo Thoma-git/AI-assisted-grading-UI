@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Grading Workbench</title>
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;family=Space+Grotesk:wght@500;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="dist/output.css" rel="stylesheet">
+    <script>
+        // Immediately-invoked function to set the theme before the page renders
+        (function () {
+            const theme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (theme === 'dark' || (!theme && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+
+        // PDF.js worker from a CDN
+        window.pdfjsWorker = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.worker.min.js`;
+    </script>
+</head>
+
+<body class="bg-background-dark text-text-dark font-sans antialiased">
+    <div class="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark" id="app">
+        <aside class="w-72 flex flex-col bg-white dark:bg-gray-800 p-6 shadow-lg z-20">
+            <div class="flex flex-col flex-1 overflow-hidden">
+                <a class="flex items-center gap-2 mb-4 py-2 px-3 rounded-md text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary transition-colors duration-200 group"
+                    href="index.html">
+                    <span class="material-symbols-outlined text-lg group-hover:text-primary">arrow_back</span>
+                    <span class="font-medium text-sm group-hover:text-primary">Back to Exam Management</span>
+                </a>
+                <h3 class="font-display font-bold text-xl text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-2xl">feed</span>
+                    Exam Grading Hub
+                </h3>
+                <div class="mb-6">
+                    <h4
+                        class="font-display font-bold text-base text-gray-900 dark:text-white mb-2 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm text-gray-500 dark:text-gray-400">work</span>
+                        Assigned Workload
+                    </h4>
+                    <div class="grid grid-cols-2 gap-2 text-sm" id="assigned-workload-container">
+                        <p class="col-span-2 text-sm text-gray-500 dark:text-gray-400">No exam repository selected.</p>
+                    </div>
+                </div>
+                <div class="pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col flex-1 min-h-0">
+                    <h4
+                        class="font-display font-bold text-base text-gray-900 dark:text-white flex items-center justify-between">
+                        <div class="flex items-center gap-1">
+                            <span
+                                class="material-symbols-outlined text-sm text-gray-500 dark:text-gray-400">checklist</span>
+                            Student Exams
+                        </div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400 font-sans" id="checklist-count">(0)</span>
+                    </h4>
+                    <div class="flex items-center gap-2 mt-2 mb-2">
+                        <span
+                            class="material-symbols-outlined text-gray-500 dark:text-gray-400 text-xl">filter_list</span>
+                        <div class="relative w-1/2">
+                            <select id="student-filter"
+                                class="form-select w-full bg-gray-100 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-200 rounded-md focus:ring-primary focus:border-primary text-sm p-2 appearance-none">
+                                <option value="">Student</option>
+                            </select>
+                            <span
+                                class="material-symbols-outlined filter-arrow !text-primary-light !font-[wght\,_500\,_opsz\,_28] right-2 top-1/2 -translate-y-1/2">expand_more</span>
+                        </div>
+                        <div class="relative w-1/2">
+                            <select id="question-filter"
+                                class="form-select w-full bg-gray-100 dark:bg-gray-700/50 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-200 rounded-md focus:ring-primary focus:border-primary text-sm p-2 appearance-none">
+                                <option value="">Question</option>
+                            </select>
+                            <span
+                                class="material-symbols-outlined filter-arrow !text-primary-light !font-[wght\,_500\,_opsz\,_28] right-2 top-1/2 -translate-y-1/2">expand_more</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-2" id="active-filters">
+                    </div>
+                    <div class="space-y-2 flex-1 overflow-y-auto pr-2 -mr-2" id="student-exams-list">
+                        <p class="text-sm text-gray-500 dark:text-gray-400">No student exams to display.</p>
+                    </div>
+                </div>
+        </aside>
+        <main class="flex-1 p-8 grid grid-cols-5 gap-8 relative overflow-hidden">
+            <svg class="arrow-line" id="arrow-svg-container"></svg>
+            <div class="col-span-3 flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-lg min-h-0 relative">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">person</span>
+                    <h2 class="font-display font-bold text-lg text-gray-900 dark:text-white" id="exam-title">No Exam
+                        Selected</h2>
+                    <div class="ml-auto flex items-center gap-2">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Grading Checkpoints:</span>
+                        <div class="flex items-center gap-2" id="grading-checkpoints">
+                        </div>
+                        <button id="add-comment-btn"
+                            class="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 border border-primary/30 hover:border-primary/50 transition-all duration-200"
+                            title="Add a new comment to the document">
+                            <span class="material-symbols-outlined text-base">add_comment</span>
+                            <span>Add Comment</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex-1 flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-b-xl"
+                    id="grading-panel">
+                    <div class="text-center p-8">
+                        <span
+                            class="material-symbols-outlined text-5xl text-gray-400 dark:text-gray-500 mb-4">school</span>
+                        <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200">Select an Exam to Begin</h3>
+                        <p class="text-gray-500 dark:text-gray-400 mt-2">Choose a student exam from the list on the left
+                            to start grading.</p>
+                    </div>
+                </div>
+                <div
+                    class="sticky bottom-0 left-0 right-0 p-3 border-t border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm flex justify-between items-center z-10 rounded-b-xl">
+                    <div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                        <span class="text-sm font-medium">Total for Q3A:</span>
+                    </div>
+                    <div
+                        class="flex items-baseline gap-1 bg-gray-100 dark:bg-gray-900/50 rounded-lg px-4 py-2 text-gray-900 dark:text-white">
+                        <span class="text-3xl font-bold font-display" id="current-total-grade">0</span>
+                        <span class="text-lg font-medium">/ <span id="max-total-grade">-</span> pts</span>
+                    </div>
+                    <button
+                        class="px-6 py-3 bg-success hover:bg-success-dark text-white font-semibold rounded-lg shadow-md transition duration-200 flex items-center gap-2 opacity-50 cursor-not-allowed"
+                        disabled="" id="finalize-grade-button">
+                        Finalize Grade
+                    </button>
+                </div>
+            </div>
+            <div class="flex flex-col bg-white dark:bg-gray-800 rounded-xl shadow-lg min-h-0 col-span-2"
+                id="right-panel">
+                <div class="p-2 border-b border-gray-200 dark:border-gray-700 flex items-center gap-1 justify-between">
+                    <div>
+                        <button id="rubric-tab-btn"
+                            class="px-3 py-2 rounded-lg text-sm font-medium text-primary border-b-2 border-primary bg-primary/10 transition duration-200">Rubric</button>
+                        <button id="reference-tab-btn"
+                            class="px-3 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-primary border-b-2 border-transparent transition duration-200">Reference</button>
+                        <button id="broadcasts-tab-btn"
+                            class="px-3 py-2 rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-primary border-b-2 border-transparent transition duration-200">Broadcasts</button>
+                    </div>
+                    <div id="pdf-zoom-controls" class="flex items-center gap-1">
+                        <button id="zoom-out-btn"
+                            class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-primary transition duration-200"
+                            title="Zoom Out">
+                            <span class="material-symbols-outlined text-base">zoom_out</span>
+                        </button>
+                        <span id="zoom-level-display"
+                            class="text-sm font-medium text-gray-500 dark:text-gray-400 w-12 text-center">100%</span>
+                        <button id="zoom-in-btn"
+                            class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-primary transition duration-200"
+                            title="Zoom In">
+                            <span class="material-symbols-outlined text-base">zoom_in</span>
+                        </button>
+                        <button id="zoom-reset-btn"
+                            class="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-primary transition duration-200"
+                            title="Fit to width">
+                            <span class="material-symbols-outlined text-base">fit_screen</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="rubric-content" class="flex-1 overflow-y-auto relative px-4">
+                    <div id="rubric-viewer-container" class="relative">
+                        <div id="rubric-overlay-container" class="absolute inset-0 pointer-events-none"></div>
+                    </div>
+                </div>
+                <div id="reference-content" class="flex-1 overflow-y-auto relative hidden px-4">
+                    <div id="reference-viewer-container" class="relative">
+                        <div id="reference-overlay-container" class="absolute inset-0 pointer-events-none">
+                        </div>
+                    </div>
+                </div>
+                <div id="broadcasts-content" class="flex-1 flex flex-col overflow-y-auto relative hidden">
+                    <div class="flex justify-between items-center p-6">
+                        <h3 id="broadcast-title-header" class="font-bold text-gray-900 dark:text-white mb-0">Broadcasts
+                        </h3>
+                        <button id="toggle-archive-view-btn-grading"
+                            class="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+                            title="View Archived">
+                            <span class="material-symbols-outlined">archive</span>
+                        </button>
+                    </div>
+                    <div id="broadcast-feed-list" class="flex-1 space-y-4 overflow-y-auto pl-6 pr-4">
+                        <div class="text-center text-gray-500 dark:text-gray-400 pt-8" id="broadcast-feed-placeholder">
+                            No broadcasts yet.</div>
+                    </div>
+                    <div class="mt-auto pt-4 border-t border-gray-200 dark:border-gray-700 px-6 pb-4">
+                        <div id="broadcast-form-container" class="hidden">
+                            <h4 class="text-base font-semibold text-gray-900 dark:text-white mb-3">Create New Broadcast
+                            </h4>
+                            <form id="broadcast-form" class="space-y-3">
+                                <input type="text" id="broadcast-title" placeholder="Title"
+                                    class="w-full bg-gray-100 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 rounded-md text-sm focus:ring-primary focus:border-primary"
+                                    required>
+                                <textarea id="broadcast-description" placeholder="Description..." rows="3"
+                                    class="w-full bg-gray-100 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 rounded-md text-sm focus:ring-primary focus:border-primary"
+                                    required></textarea>
+                                <select id="broadcast-type"
+                                    class="w-full bg-gray-100 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 rounded-md text-sm focus:ring-primary focus:border-primary text-gray-900 dark:text-gray-200">
+                                    <option value="Information">Information (Blue)</option>
+                                    <option value="Announcement">Announcement (Red)</option>
+                                    <option value="Suggestion">Suggestion (Yellow)</option>
+                                </select>
+                                <div class="flex items-center">
+                                    <input id="reference-exam-checkbox" type="checkbox"
+                                        class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary dark:bg-gray-700 dark:border-gray-600">
+                                    <label for="reference-exam-checkbox"
+                                        class="ml-2 block text-sm text-gray-500 dark:text-gray-400">
+                                        Reference current student exam
+                                    </label>
+                                </div>
+                                <div class="flex gap-2 pt-1">
+                                    <button type="button" id="cancel-broadcast-form-btn"
+                                        class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium rounded-lg shadow-sm hover:bg-gray-300 dark:hover:bg-gray-500 focus:outline-none transition-colors duration-200 text-sm">
+                                        Cancel
+                                    </button>
+                                    <button type="submit"
+                                        class="w-full px-4 py-2 bg-primary text-white font-medium rounded-lg shadow-sm hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-background-dark transition-colors duration-200 text-sm">Post
+                                        Broadcast</button>
+                                </div>
+                            </form>
+                        </div>
+                        <button id="show-broadcast-form-btn"
+                            class="mt-2 w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium rounded-lg shadow-sm hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none transition-colors duration-200 text-sm">
+                            <span class="material-symbols-outlined text-base">add</span> Create Broadcast
+                        </button>
+                    </div>
+                </div>
+                <div id="right-panel-footer"
+                    class="p-3 border-t border-gray-200 dark:border-gray-700 flex justify-end items-center gap-1 text-gray-500 dark:text-gray-400">
+                    <div id="rubric-selector-container" class="w-full">
+                        <label for="rubric-selector" class="sr-only">Select Rubric</label>
+                        <select id="rubric-selector"
+                            class="form-select w-full bg-gray-100 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-200 rounded-md focus:ring-primary focus:border-primary text-sm p-2">
+                            <option value="assets/rubric/dummy-rubric.pdf">Q3 Grading Rubric</option>
+                            <option value="assets/rubric/general-rubric.pdf">General Exam Rubric</option>
+                        </select>
+                    </div>
+                    <div id="reference-selector-container" class="w-full hidden">
+                        <label for="reference-selector" class="sr-only">Select Reference</label>
+                        <select id="reference-selector"
+                            class="form-select w-full bg-gray-100 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600 text-gray-900 dark:text-gray-200 rounded-md focus:ring-primary focus:border-primary text-sm p-2">
+                            <option value="assets/references/dummy-reference.pdf">Control Systems Textbook Ch. 8
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="comment-context-menu"
+                class="hidden absolute z-50 bg-surface-dark border border-border-dark rounded-md shadow-lg py-1">
+                <button id="delete-comment-btn"
+                    class="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300">
+                    <span class="material-symbols-outlined text-base">delete</span>
+                    <span>Delete Comment</span>
+                </button>
+            </div>
+            <div id="exam-item-context-menu"
+                class="hidden absolute z-50 bg-white dark:bg-surface-dark border border-gray-200 dark:border-border-dark rounded-md shadow-lg py-1 min-w-[200px]">
+                <button data-action="reset"
+                    class="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50">
+                    <span class="material-symbols-outlined text-base">restart_alt</span>
+                    <span>Reset to Auto</span>
+                </button>
+                <button data-action="graded-once"
+                    class="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50">
+                    <span class="material-symbols-outlined text-base text-success">check</span>
+                    <span>Mark Graded (1st Pass)</span>
+                </button>
+                <button data-action="graded-twice"
+                    class="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50">
+                    <span class="material-symbols-outlined text-base text-success-dark">done_all</span>
+            </div>
+        </main>
+    </div>
+    <script>
+        //window.onerror = function (message, source, lineno, colno, error) {
+        //console.error("Global Error:", message, "at", source, ":", lineno);
+        //const errDiv = document.getElementById('global-error-display') || document.createElement('div');
+        //errDiv.id = 'global-error-display';
+        //errDiv.style.cssText = 'position:fixed;top:0;left:0;width:100%;background:red;color:white;z-index:10000;padding:10px;text-align:center;font-weight:bold;';
+        //errDiv.textContent = "Script Error: " + message + " (Check Console)";
+        //document.body.appendChild(errDiv);
+        //};
+    </script>
+
+    <script type="module">
+        import { initializeTaWorkload } from './assets/js/grading-workload.js';
+        import { renderStudentExamsList, updateManualGradingStatus, populateFilters, populateRubrics } from './assets/js/grading-exams-list.js';
+        import { initializeGradingView, loadStudentExam } from './assets/js/grading-view.js';
+
+        // Expose functions to window for global access (needed for inline event handlers if any)
+        window.loadStudentExam = loadStudentExam;
+        window.updateManualGradingStatus = updateManualGradingStatus;
+
+        // Global DOM Elements & State
+        let svgContainer, mainPanel, gradingPanel, rightPanel;
+        let pendingTasks;
+        let pdfRenderCache = {};
+
+        // Debug Helper
+        function logDebug(msg) {
+            console.log(`[GradingPage] ${msg}`);
+        }
+
+        function initGradingPage() {
+            try {
+                logDebug("Initializing page...");
+
+                // Initialize Globals
+                svgContainer = document.getElementById('arrow-svg-container');
+                mainPanel = document.querySelector('main');
+                gradingPanel = document.getElementById('grading-panel');
+                rightPanel = document.getElementById('right-panel');
+                pdfRenderCache = {};
+
+                // --- Session Storage Logic ---
+                const REPO_STORAGE_KEY = 'currentRepository';
+                const savedRepoData = sessionStorage.getItem(REPO_STORAGE_KEY);
+
+                if (savedRepoData) {
+                    try {
+                        window.currentRepository = JSON.parse(savedRepoData);
+                        logDebug("Successfully parsed repository.");
+                    } catch (parseError) {
+                        console.error("[Grading] JSON parse error:", parseError);
+                        window.currentRepository = null;
+                    }
+                }
+
+                // --- RENDER UI ONLY AFTER DATA IS LOADED ---
+                if (window.currentRepository) {
+                    // 1. Initialize Workload & Filters
+                    initializeTaWorkload(window.currentRepository);
+                    populateFilters(window.currentRepository);
+
+                    populateRubrics(window.currentRepository);
+
+                    // 2. Initialize Views
+                    initializeGradingView();
+                    initializeCommentWidgets();
+                    checkBroadcastAvailability();
+
+                    // 3. Render the Main List
+                    renderStudentExamsList(window.currentRepository, () => {
+                        setupChecklistClickHandlers();
+                        setupWorkloadClickHandlers();
+                    });
+
+                    // 4. Load Broadcasts
+                    loadAndDisplayBroadcasts(document.getElementById('broadcast-feed-list'), isShowingArchivedGrading);
+
+                    // 5. Setup Observers
+                    setupFinalizeButton();
+                    initializeDraggableCheckpoints();
+                    initializeScrollToRubricButtons();
+
+                    // Responsive Observers
+                    new ResizeObserver(() => {
+                        const currentPdfCanvas = document.querySelector('#pdf-page-container canvas');
+                        if (window.initializePdfViewer && currentPdfCanvas) {
+                            // Pass null to keep current page
+                            // NOTE: Ensure window.currentPageNumber is set in grading-view.js if used here
+                            // or remove parameters to rely on default
+                        }
+                        if (window.initializeRubricViewer && !document.getElementById('rubric-content').classList.contains('hidden')) window.initializeRubricViewer();
+                        if (window.initializeReferenceViewer && !document.getElementById('reference-content').classList.contains('hidden')) window.initializeReferenceViewer();
+                    }).observe(document.getElementById('grading-panel'));
+
+                    new ResizeObserver(() => setupArrows()).observe(mainPanel);
+
+                } else {
+                    console.warn("[Grading] No data found in sessionStorage.");
+                    // Show empty state
+                    const listContainer = document.getElementById('student-exams-list');
+                    if (listContainer) {
+                        listContainer.innerHTML = `
+                            <div class="flex flex-col items-center justify-center h-64 text-center p-6">
+                                <span class="material-symbols-outlined text-4xl text-yellow-500 mb-2">warning</span>
+                                <p class="text-gray-700 dark:text-gray-300 font-medium">No exam data found.</p>
+                                <a href="index.html" class="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors">Go to Dashboard</a>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to initialize grading page:", e);
+            }
+        }
+
+
+        // Expose init for debugging
+        window.initGradingPage = initGradingPage;
+
+        // Auto-init
+        // Auto-init
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initGradingPage);
+        } else {
+            initGradingPage();
+        }
+
+        // Workload logic moved to assets/js/grading-workload.js
+
+        // --- Zoom Logic ---
+        let zoomLevels = { rubric: null, reference: null }; // null means 'fit to width'
+        const ZOOM_STEP = 0.25;
+        const MAX_ZOOM = 3.0;
+        const MIN_ZOOM = 0.5;
+        // --- PDF.js Rendering Logic (will be called by the onload event) ---
+        window.initializeRubricViewer = async function (pdfUrl) {
+            if (!pdfUrl) pdfUrl = document.getElementById('rubric-selector').value;
+            const container = document.getElementById('rubric-viewer-container');
+            if (!container) return;
+
+            if (container.clientWidth === 0) return; // Don't render if not visible
+            const pdfjsLib = window.pdfjsLib;
+            if (!pdfjsLib) { console.error("PDF.js library not loaded."); return; }
+            pdfjsLib.GlobalWorkerOptions.workerSrc = window.pdfjsWorker;
+
+            try {
+                // Clear existing content before rendering a new PDF
+                container.querySelectorAll('canvas').forEach(c => c.remove());
+
+                const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+                const numPages = pdf.numPages;
+
+                // Clear only existing canvases, not the overlay container
+                container.querySelectorAll('canvas').forEach(c => c.remove());
+
+                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    // Use the container's clientWidth for scaling
+                    const containerStyle = window.getComputedStyle(container);
+                    const desiredWidth = container.clientWidth - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight) - 10; // Subtract 10px to prevent horizontal scrollbar
+                    if (desiredWidth === 0) { console.error("Rubric container has no width."); return; }
+
+                    const viewport = page.getViewport({ scale: 1 });
+                    let scale;
+                    if (zoomLevels.rubric === null) {
+                        scale = desiredWidth / viewport.width; // Fit to width
+                    } else {
+                        scale = zoomLevels.rubric; // Use manual zoom level
+                    }
+                    const scaledViewport = page.getViewport({ scale });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = scaledViewport.height;
+                    canvas.width = scaledViewport.width;
+                    canvas.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';
+                    canvas.style.marginBottom = '1rem';
+
+                    const renderContext = { canvasContext: context, viewport: scaledViewport };
+                    await page.render(renderContext).promise;
+
+                    // Get a reference to the overlay container
+                    const rubricOverlayContainer = document.getElementById('rubric-overlay-container');
+                    if (!rubricOverlayContainer) {
+                        console.error("Rubric overlay container not found.");
+                        return;
+                    }
+
+                    // Insert canvas before the rubricOverlayContainer to ensure overlays are on top
+                    if (rubricOverlayContainer) {
+                        container.insertBefore(canvas, rubricOverlayContainer);
+                    } else {
+                        container.appendChild(canvas);
+                    }
+                }
+            } catch (error) {
+                console.error('Error rendering rubric PDF:', error);
+                container.innerHTML = `<div class="p-4 text-center text-red-500">Failed to load rubric PDF.</div>`;
+            } finally {
+                updateZoomDisplay('rubric');
+            }
+        };
+        window.initializeReferenceViewer = async function (pdfUrl) {
+            if (!pdfUrl) pdfUrl = document.getElementById('reference-selector').value;
+            const container = document.getElementById('reference-viewer-container');
+            if (!container) return;
+
+            if (container.clientWidth === 0) return; // Don't render if not visible
+            const pdfjsLib = window.pdfjsLib;
+            if (!pdfjsLib) { console.error("PDF.js library not loaded."); return; }
+            pdfjsLib.GlobalWorkerOptions.workerSrc = window.pdfjsWorker;
+
+            try {
+                // Clear existing content before rendering a new PDF
+                container.querySelectorAll('canvas').forEach(c => c.remove());
+
+                const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+                const numPages = pdf.numPages;
+
+                // Clear only existing canvases, not the overlay container
+                container.querySelectorAll('canvas').forEach(c => c.remove());
+
+                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                    const page = await pdf.getPage(pageNum);
+                    const containerStyle = window.getComputedStyle(container);
+                    const desiredWidth = container.clientWidth - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight) - 10; // Subtract 10px to prevent horizontal scrollbar
+                    if (desiredWidth === 0) { console.error("Reference container has no width."); return; }
+
+                    const viewport = page.getViewport({ scale: 1 });
+                    let scale;
+                    if (zoomLevels.reference === null) {
+                        scale = desiredWidth / viewport.width; // Fit to width
+                    } else {
+                        scale = zoomLevels.reference; // Use manual zoom level
+                    }
+                    const scaledViewport = page.getViewport({ scale });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = scaledViewport.height;
+                    canvas.width = scaledViewport.width;
+                    canvas.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';
+                    canvas.style.marginBottom = '1rem';
+
+                    const renderContext = { canvasContext: context, viewport: scaledViewport };
+                    await page.render(renderContext).promise;
+
+                    const referenceOverlayContainer = document.getElementById('reference-overlay-container');
+                    container.insertBefore(canvas, referenceOverlayContainer);
+                }
+            } catch (error) {
+                console.error('Error rendering reference PDF:', error);
+                container.innerHTML = `<div class="p-4 text-center text-red-500">Failed to load reference PDF.</div>`;
+            } finally {
+                updateZoomDisplay('reference');
+            }
+        };
+
+        // Global counter to track the active render task
+        let currentRenderId = 0;
+
+        window.initializePdfViewer = async function (pdfUrl, pageToShow) {
+            const pdfPageContainer = document.getElementById('pdf-page-container');
+            const gradingPanel = document.getElementById('grading-panel');
+            if (!pdfPageContainer) return;
+
+            // 1. Update Globals so ResizeObserver knows what to re-render
+            if (pdfUrl) window.currentPdfUrl = pdfUrl;
+            if (pageToShow) window.currentPageNumber = pageToShow;
+
+            // 2. Concurrency Control: Create a unique ID for THIS render attempt
+            const myRenderId = ++currentRenderId;
+
+            if (!pdfUrl) pdfUrl = 'assets/exams/dummy-exam.pdf';
+
+            const pdfjsLib = window.pdfjsLib;
+            if (!pdfjsLib) {
+                console.error("PDF.js library not loaded.");
+                return;
+            }
+            pdfjsLib.GlobalWorkerOptions.workerSrc = window.pdfjsWorker;
+
+            try {
+                const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+
+                // STOP if a newer render has started since we began loading
+                if (myRenderId !== currentRenderId) return;
+
+                const numPages = pdf.numPages;
+                const pagesToRender = Array.from({ length: numPages }, (_, i) => i + 1);
+
+                // Clear OLD canvases now that we are ready to render
+                pdfPageContainer.querySelectorAll('canvas').forEach(c => c.remove());
+
+                for (const pageNum of pagesToRender) {
+                    // STOP immediately if a newer render has started
+                    if (myRenderId !== currentRenderId) return;
+
+                    // Check container again in case DOM changed
+                    const currentPdfContainer = document.getElementById('pdf-page-container');
+                    const currentOverlay = document.getElementById('grading-overlay-container');
+                    if (!currentPdfContainer || !currentOverlay) return;
+
+                    const page = await pdf.getPage(pageNum);
+
+                    // Viewport math
+                    const containerStyle = window.getComputedStyle(currentPdfContainer);
+                    const desiredWidth = currentPdfContainer.clientWidth - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight) - 10;
+                    const viewport = page.getViewport({ scale: 1 });
+                    const scale = desiredWidth / viewport.width;
+                    const scaledViewport = page.getViewport({ scale });
+
+                    const canvas = document.createElement('canvas');
+                    canvas.className = 'block';
+                    canvas.setAttribute('data-page-number', pageNum);
+
+                    const context = canvas.getContext('2d');
+                    canvas.height = scaledViewport.height;
+                    canvas.width = scaledViewport.width;
+                    canvas.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';
+                    canvas.style.marginBottom = '1rem';
+
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: scaledViewport
+                    };
+
+                    await page.render(renderContext).promise;
+
+                    // STOP before appending if a newer render took over
+                    if (myRenderId !== currentRenderId) return;
+
+                    if (currentPdfContainer.contains(currentOverlay)) {
+                        currentPdfContainer.insertBefore(canvas, currentOverlay);
+                    } else {
+                        currentPdfContainer.appendChild(canvas);
+                    }
+                }
+
+                // Final check before UI updates
+                if (myRenderId !== currentRenderId) return;
+
+                setupArrows();
+
+                // Scroll Logic
+                if (pageToShow && gradingPanel) {
+                    const targetPageNum = parseInt(pageToShow);
+                    const targetCanvas = pdfPageContainer.querySelector(`canvas[data-page-number="${targetPageNum}"]`);
+
+                    if (targetCanvas) {
+                        setTimeout(() => {
+                            gradingPanel.scrollTo({
+                                top: targetCanvas.offsetTop - 20,
+                                behavior: 'smooth'
+                            });
+                        }, 100);
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error rendering PDF:', error);
+            }
+        }
+        // Ensure containers exist
+
+
+
+
+        function isElementVisibleInContainer(el, container) {
+            if (!el || !container) return false;
+            const elRect = el.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            // Check if the element is vertically within the container's viewport
+            const isVerticallyVisible = elRect.top < containerRect.bottom && elRect.bottom > containerRect.top;
+            // Check if the element is horizontally within the container's viewport
+            const isHorizontallyVisible = elRect.left < containerRect.right && elRect.right > containerRect.left;
+            return isVerticallyVisible && isHorizontallyVisible;
+        }
+
+        function drawArrow(sourceId, targetId, isReference = false) {
+            const sourceEl = document.getElementById(sourceId);
+            const targetEl = document.getElementById(targetId);
+            if (!sourceEl || !targetEl) return;
+
+            const rubricContent = document.getElementById('rubric-content');
+            const referenceContent = document.getElementById('reference-content');
+            // Only draw the arrow if both endpoints are visible in their respective containers
+            const targetContainer = isReference ? referenceContent : rubricContent;
+            if (!isElementVisibleInContainer(sourceEl, gradingPanel) || !isElementVisibleInContainer(targetEl, targetContainer)) return;
+
+            const mainRect = mainPanel.getBoundingClientRect();
+            const sourceRect = sourceEl.getBoundingClientRect();
+            const targetRect = targetEl.getBoundingClientRect();
+            // Calculate positions relative to the main container, which is the offset parent of the SVG
+            const startX = sourceRect.right - mainRect.left + 5;
+            const startY = sourceRect.top + sourceRect.height / 2 - mainRect.top;
+            const endX = targetRect.left - mainRect.left - 5;
+            const endY = targetRect.top + targetRect.height / 2 - mainRect.top;
+            // Adjust control points for a smoother, less direct curve, more horizontal bend
+            const controlX1 = startX + 50; // Extend horizontally from source
+            const controlY1 = startY;
+            const controlX2 = endX - 50; // Extend horizontally towards target
+            const controlY2 = endY;
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M ${startX} ${startY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${endX} ${endY}`);
+            path.setAttribute('stroke', '#fb923c'); // orange-400
+            path.setAttribute('stroke-width', '2');
+            path.setAttribute('fill', 'none');
+            path.setAttribute('marker-end', 'url(#arrowhead)');
+            svgContainer.appendChild(path);
+        }
+
+        function setupArrows() {
+            // Clear existing arrows before redrawing
+            svgContainer.innerHTML = ''; // Clear all children, including previous defs
+            // Define arrowhead marker
+            const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', 'arrowhead');
+            marker.setAttribute('viewBox', '0 0 10 10');
+            marker.setAttribute('refX', '8');
+            marker.setAttribute('refY', '5');
+            marker.setAttribute('markerWidth', '6');
+            marker.setAttribute('markerHeight', '6');
+            marker.setAttribute('orient', 'auto-start-reverse');
+            const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+            polygon.setAttribute('points', '0 0, 10 5, 0 10');
+            polygon.setAttribute('fill', '#fb923c');
+            marker.appendChild(polygon);
+            defs.appendChild(marker);
+            svgContainer.appendChild(defs);
+            // Draw arrows
+            const isReferenceTabActive = !document.getElementById('reference-content').classList.contains('hidden');
+            const prefix = isReferenceTabActive ? 'ref-' : '';
+            const sourceElements = document.querySelectorAll('[id^="source"]');
+
+            sourceElements.forEach(sourceEl => {
+                const targetId = sourceEl.id.replace('source', `${prefix}target`);
+                drawArrow(sourceEl.id, targetId, isReferenceTabActive);
+            });
+        }
+        // The `setupArrows` function is called when the PDF is rendered,
+        // which is what we want. However, if the PDF fails to load, the arrows
+        // might not be drawn. We can add a call here to ensure they are drawn
+        // regardless, as the target elements are now statically in the HTML.
+        setupArrows(); // Initial arrow setup
+
+
+        // Redraw on window resize
+        new ResizeObserver(setupArrows).observe(mainPanel);
+        gradingPanel.addEventListener('scroll', setupArrows); // Exam panel
+        rightPanel.querySelectorAll('.overflow-y-auto').forEach(p => p.addEventListener('scroll', setupArrows)); // Rubric/Reference panels
+
+        // --- Streamlined Grading Logic ---
+        // The gradingPanel constant is already defined above for the arrow logic
+        const pointsInputs = document.querySelectorAll('#grading-panel .points-input');
+        const currentTotalGradeSpan = document.getElementById('current-total-grade');
+        const maxTotalGradeSpan = document.getElementById('max-total-grade');
+        let finalizeGradeButton = document.getElementById('finalize-grade-button');
+        let gradingCheckpointsContainer = document.getElementById('grading-checkpoints');
+        let totalMaxPoints = 0;
+        let gradableSections = [];
+
+        function initializeCheckpoints() {
+            if (gradingCheckpointsContainer) gradingCheckpointsContainer.innerHTML = '';
+            totalMaxPoints = 0;
+            gradableSections.length = 0;
+
+            const examTitleElement = document.getElementById('exam-title');
+            // Identify sections that have grading data
+            document.querySelectorAll('.grading-checkpoint-group[data-max-points]').forEach(section => {
+                const maxPoints = parseInt(section.getAttribute('data-max-points'));
+                if (maxPoints > 0) {
+                    gradableSections.push(section);
+                } else {
+                    section.setAttribute('data-confirmed', 'true');
+                }
+            });
+
+            gradableSections.forEach((section, index) => {
+                const checkpointIndex = index + 1;
+                section.setAttribute('data-checkpoint-index', checkpointIndex);
+                totalMaxPoints += parseInt(section.getAttribute('data-max-points'));
+
+                const badge = document.createElement('div');
+
+                // DEFAULT STYLE: Gray/Empty
+                // We explicitly set the default classes for an incomplete state here
+                badge.className = 'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200 cursor-pointer select-none border-2 ' +
+                    'bg-transparent border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-primary hover:text-primary';
+
+                badge.textContent = checkpointIndex;
+                badge.dataset.checkpointTarget = checkpointIndex;
+
+                if (gradingCheckpointsContainer) {
+                    gradingCheckpointsContainer.appendChild(badge);
+                }
+
+                badge.addEventListener('click', () => {
+                    const gradingControls = section.querySelector('.grading-controls') || section; // Fallback to section if controls wrapper missing
+                    if (gradingControls) {
+                        gradingControls.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        section.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-[#1e293b]');
+                        setTimeout(() => section.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-[#1e293b]'), 1500);
+                    }
+                });
+            });
+
+            // Removed incorrect assignment to maxTotalGradeSpan here. 
+            // The maxTotalGradeSpan should reflect the Question's total points, not the sum of all checkpoint maximums,
+            // which may lead to inflated values if checkpoints are not mutually exclusive partitions.
+        }
+
+        function updateTotalGrade() {
+            let currentGrade = 0;
+            let allInputsValid = true;
+            let isPartiallyGraded = false;
+
+            gradableSections.forEach(section => {
+                const input = section.querySelector('.points-input');
+                const checkpointIndex = section.getAttribute('data-checkpoint-index');
+                const checkpointBadge = gradingCheckpointsContainer?.querySelector(`[data-checkpoint-target="${checkpointIndex}"]`);
+                const value = input.value;
+
+                let isValid = false;
+
+                // Strict Validation: Must not be empty, must not be placeholder '—', must be a number
+                if (value !== '' && value !== '—') {
+                    const points = parseFloat(value); // Use parseFloat to catch decimals if necessary
+                    const maxPoints = parseInt(input.getAttribute('max'));
+                    // check if it is a valid number and within range
+                    if (!isNaN(points) && points >= 0 && points <= maxPoints) {
+                        isValid = true;
+                        currentGrade += points;
+                        isPartiallyGraded = true;
+                    }
+                }
+
+                if (isValid) {
+                    // VALID STATE: Turn Green
+                    if (checkpointBadge) {
+                        // Remove gray/default styles
+                        checkpointBadge.classList.remove('bg-transparent', 'border-gray-300', 'dark:border-gray-600', 'text-gray-500', 'dark:text-gray-400', 'hover:border-primary', 'hover:text-primary');
+                        // Add success styles (Green)
+                        checkpointBadge.classList.add('bg-emerald-500', 'border-emerald-500', 'text-white');
+                    }
+                } else {
+                    // INVALID/EMPTY STATE: Revert to Gray
+                    allInputsValid = false;
+                    if (checkpointBadge) {
+                        // Remove success styles
+                        checkpointBadge.classList.remove('bg-emerald-500', 'border-emerald-500', 'text-white');
+                        // Add gray/default styles
+                        checkpointBadge.classList.add('bg-transparent', 'border-gray-300', 'dark:border-gray-600', 'text-gray-500', 'dark:text-gray-400', 'hover:border-primary', 'hover:text-primary');
+                    }
+                }
+            });
+
+            if (currentTotalGradeSpan) currentTotalGradeSpan.textContent = currentGrade;
+
+            // Button State Logic
+            // Only enable if we have gradable sections and ALL of them are valid
+            if (finalizeGradeButton) {
+                if (allInputsValid && gradableSections.length > 0) {
+                    finalizeGradeButton.removeAttribute('disabled');
+                    finalizeGradeButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    finalizeGradeButton.setAttribute('disabled', 'disabled');
+                    finalizeGradeButton.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
+
+            // Update the status of the current checklist item if partially graded
+            if (isPartiallyGraded) {
+                const currentTask = document.querySelector('.completion-checklist-item.current');
+                if (currentTask && currentTask.dataset.status !== 'completed') {
+                    currentTask.dataset.status = 'in-progress';
+                    const statusDiv = currentTask.querySelector('.py-1.px-3.text-sm');
+                    if (statusDiv) {
+                        statusDiv.textContent = 'In Progress';
+                        statusDiv.className = 'py-1 px-3 text-sm rounded-b-md bg-primary/10 text-primary-light';
+                    }
+                }
+            }
+        }
+
+
+
+        function setupPointsInputs() {
+            document.querySelectorAll('#grading-panel .points-input').forEach(input => {
+                const parentGroup = input.closest('[data-max-points]');
+                const maxPoints = parseInt(parentGroup.getAttribute('data-max-points'));
+                input.addEventListener('input', (e) => {
+                    let value = e.target.value;
+                    const points = parseInt(value);
+                    // Reset styles
+                    e.target.classList.remove('border-success', 'text-success', 'border-primary', 'text-primary', 'border-red-500', 'text-red-500', 'text-text-muted-dark', 'border-border-dark');
+                    if (value === '' || value === '—') { // Changed from '-' to '—' as per placeholder
+                        // Empty or placeholder state
+                        e.target.classList.add('text-gray-500', 'dark:text-text-muted-dark', 'border-gray-300', 'dark:border-border-dark');
+                        parentGroup.setAttribute('data-partial-points', ''); // Clear partial points
+                    } else if (!isNaN(points) && points >= 0 && points <= maxPoints) {
+                        // Valid number entered
+                        parentGroup.setAttribute('data-partial-points', points);
+                        e.target.classList.add('border-primary', 'text-primary'); // Primary accent color for override
+                    } else {
+                        // Invalid input (e.g., text, out of range number)
+                        e.target.classList.add('border-red-500', 'text-red-500'); // Indicate error
+                        parentGroup.setAttribute('data-partial-points', '');
+                    }
+                    updateTotalGrade();
+                });
+                // Initial state (placeholder '—')
+                input.value = ''; // Ensure it's empty
+                input.setAttribute('placeholder', '—');
+                input.classList.add('text-gray-500', 'dark:text-text-muted-dark'); // Apply muted text color for placeholder
+                // If the section was previously confirmed (e.g., on page load after being saved)
+                if (parentGroup.getAttribute('data-confirmed') === 'true') {
+                    // Convert 'partial-points' to number, if it exists
+                    const initialPoints = parseInt(parentGroup.getAttribute('data-partial-points'));
+                    if (!isNaN(initialPoints) && initialPoints >= 0 && initialPoints <= maxPoints) {
+                        input.value = initialPoints; // Set actual value
+                        input.classList.add('border-primary', 'text-primary');
+                    } else {
+                        input.value = ''; // Keep empty if not a valid number, and apply placeholder styles
+                        input.classList.add('text-gray-500', 'dark:text-text-muted-dark');
+                    }
+                }
+            });
+        }
+
+        initializeCheckpoints();
+        updateTotalGrade();
+        // New Filtering Logic for Guided Workflow
+        const studentSelect = document.getElementById('student-filter');
+        const questionSelect = document.getElementById('question-filter');
+        const activeFiltersContainer = document.getElementById('active-filters');
+        let workloadButtons = [];
+        const examViewContainer = document.querySelector('.col-span-3.flex.flex-col');
+        let draggedElement = null;
+        let draggedElementOffsetX = 0, draggedElementOffsetY = 0;
+        let draggedComment = null; // Use a variable scoped to this page for the comment being dragged
+        let draggedCommentOffsetX = 0;
+        let draggedCommentOffsetY = 0;
+        const addCommentBtn = document.getElementById('add-comment-btn');
+        const contextMenu = document.getElementById('comment-context-menu');
+        const deleteCommentBtn = document.getElementById('delete-comment-btn');
+
+        // Template for the PDF viewer and grading controls.
+        // This will be used to restore the view after it's been replaced by a placeholder.
+        const examViewTemplate = `
+            <div class="flex-1 overflow-y-auto relative bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-b-xl p-4" id="grading-panel">
+                <div id="pdf-viewer-container">
+                    <div id="pdf-page-container" class="relative">
+                        <div id="grading-overlay-container" class="absolute inset-0 z-10 pointer-events-none p-4">
+                            </div>
+                    </div>
+                </div>
+            </div>
+            <div class="sticky bottom-0 left-0 right-0 p-3 border-t border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm flex justify-between items-center z-10 rounded-b-xl">
+                <div class="flex items-center gap-1 text-gray-500 dark:text-gray-400">
+                    <span class="text-sm font-medium">Total for Q3A:</span>
+                </div>
+                <div class="flex items-baseline gap-1 bg-gray-100 dark:bg-gray-900/50 rounded-lg px-4 py-2 text-gray-900 dark:text-white">
+                    <span class="text-3xl font-bold font-display" id="current-total-grade">0</span>
+                    <span class="text-lg font-medium">/ <span id="max-total-grade">-</span> pts</span>
+                </div>
+                <button class="px-6 py-3 bg-success hover:bg-success-dark text-white font-semibold rounded-lg shadow-md transition duration-200 flex items-center gap-2 opacity-50 cursor-not-allowed" disabled="" id="finalize-grade-button">Finalize Grade</button>
+            </div>`;
+
+        function autoSizeTextarea(textarea) {
+            const maxHeight = parseInt(window.getComputedStyle(textarea).maxHeight);
+
+            // Reset height to auto to get the natural scrollHeight
+            textarea.style.height = 'auto';
+            const scrollHeight = textarea.scrollHeight;
+
+            if (scrollHeight > maxHeight) {
+                textarea.style.height = `${maxHeight}px`;
+                textarea.style.overflowY = 'auto'; // Show scrollbar
+            } else {
+                textarea.style.height = `${scrollHeight}px`;
+                textarea.style.overflowY = 'hidden'; // Hide scrollbar
+            }
+        }
+
+        function initializeDraggableCheckpoints() {
+            document.querySelectorAll('.grading-checkpoint-group').forEach(checkpoint => {
+                const handle = checkpoint.querySelector('.grading-drag-handle');
+                if (!handle) return;
+
+                handle.addEventListener('dragstart', (e) => {
+                    e.stopPropagation();
+                    const pageContainer = document.getElementById('pdf-page-container');
+                    if (!pageContainer) return;
+
+                    draggedElement = checkpoint;
+                    const rect = checkpoint.getBoundingClientRect();
+                    const pageContainerRect = pageContainer.getBoundingClientRect();
+
+                    // Calculate initial position relative to the new parent
+                    const initialTop = rect.top - pageContainerRect.top;
+                    const initialLeft = rect.left - pageContainerRect.left;
+
+                    draggedElementOffsetX = e.clientX - rect.left; // Offset within the element
+                    draggedElementOffsetY = e.clientY - rect.top; // Offset within the element
+
+                    e.dataTransfer.setData('application/x-grading-checkpoint-id', checkpoint.id || 'checkpoint');
+                    // Use the whole checkpoint element for the drag preview image
+                    e.dataTransfer.setDragImage(checkpoint, draggedElementOffsetX, draggedElementOffsetY);
+
+                    e.dataTransfer.effectAllowed = 'move';
+                    pageContainer.appendChild(draggedElement); // Reparent the element
+                    draggedElement.style.top = `${initialTop}px`;
+                    draggedElement.style.left = `${initialLeft}px`;
+                    setTimeout(() => checkpoint.classList.add('is-dragging'), 0);
+                });
+
+                handle.addEventListener('dragend', () => {
+                    if (draggedElement) {
+                        draggedElement.classList.remove('is-dragging');
+                    }
+                    // The drop handler will re-attach it to the correct page.
+                    setupArrows(); // Redraw arrows after drag ends
+                    // This is a fallback in case drop doesn't fire.
+                    draggedElement = null;
+                });
+            });
+        }
+
+        function handleDrop(e) {
+            const draggedItem = draggedElement || draggedComment;
+            if (!draggedItem) return;
+            const gradingPanel = document.getElementById('grading-panel');
+
+            if (draggedItem === draggedElement) {
+                // Logic for grading checkpoints (which are reparented)
+                const panelRect = gradingPanel.getBoundingClientRect();
+                const newLeft = e.clientX - panelRect.left + gradingPanel.scrollLeft - draggedElementOffsetX;
+                const newTop = e.clientY - panelRect.top + gradingPanel.scrollTop - draggedElementOffsetY;
+                draggedItem.style.left = `${newLeft}px`;
+                draggedItem.style.top = `${newTop}px`;
+            } else {
+                // Logic for standalone comments (child of non-scrolling overlay)
+                const overlayRect = draggedItem.parentElement.getBoundingClientRect();
+                const newLeft = e.clientX - overlayRect.left - draggedCommentOffsetX;
+                const newTop = e.clientY - overlayRect.top - draggedCommentOffsetY;
+                draggedItem.style.left = `${newLeft}px`;
+                draggedItem.style.top = `${newTop}px`;
+            }
+        }
+
+        function setupCommentWidget(widget) {
+            const toggle = widget.querySelector('.comment-toggle');
+            const body = widget.querySelector('.comment-body');
+            const textarea = widget.querySelector('textarea');
+            const dragHandle = widget.querySelector('.comment-drag-handle');
+            let currentWidget = null;
+
+            // --- Drag and Drop Logic ---
+            if (dragHandle) {
+                dragHandle.setAttribute('draggable', 'true');
+                dragHandle.addEventListener('dragstart', (e) => {
+                    // Prevent the click event from firing when starting a drag
+                    e.stopPropagation();
+                    const checkpointGroup = widget.closest('.grading-checkpoint-group');
+
+                    if (checkpointGroup) {
+                        // Dragging of checkpoints is handled by their own drag handles.
+                        // This handle is for standalone comments only.
+                    } else {
+                        // This is a standalone comment
+                        e.dataTransfer.setData('application/x-comment-widget-id', widget.id);
+                        draggedComment = widget;
+                        const widgetRect = widget.getBoundingClientRect();
+                        draggedCommentOffsetX = e.clientX - widgetRect.left;
+                        draggedCommentOffsetY = e.clientY - widgetRect.top;
+                    }
+                    e.dataTransfer.effectAllowed = 'move';
+                    const draggedItem = draggedComment; // Only standalone comments are handled here
+                    if (!draggedItem) return;
+                    setTimeout(() => draggedItem.classList.add('is-dragging'), 0);
+                });
+
+                dragHandle.addEventListener('dragend', () => {
+                    const draggedItem = draggedElement || draggedComment;
+                    if (draggedItem) draggedItem.classList.remove('is-dragging');
+                    draggedElement = null;
+                    draggedComment = null;
+                });
+            }
+            // --- End Drag and Drop Logic ---
+
+            // --- Context Menu for Deletion ---
+            toggle.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const gradingPanel = document.getElementById('grading-panel');
+                const mainContainer = document.querySelector('main');
+                // Get position relative to the viewport
+                const rect = toggle.getBoundingClientRect();
+                const mainRect = mainContainer.getBoundingClientRect();
+
+                // Position the menu where the comment body would appear.
+                // Calculate position relative to the main container, which is the offset parent.
+                const bodyOffsetX = 44; // From CSS: .comment-body { left: 44px; }
+                const bodyOffsetY = -2; // From CSS: .comment-body { top: -2px; }
+                contextMenu.style.top = `${rect.top - mainRect.top + bodyOffsetY}px`;
+                contextMenu.style.left = `${rect.left - mainRect.left + bodyOffsetX}px`;
+                contextMenu.classList.remove('hidden');
+
+                currentWidget = widget; // Store reference to the widget that was clicked
+            });
+
+            deleteCommentBtn.onclick = () => {
+                if (currentWidget) {
+                    currentWidget.remove();
+                    currentWidget = null;
+                }
+                contextMenu.classList.add('hidden');
+            };
+
+            // --- End Context Menu Logic ---
+
+            toggle.addEventListener('click', () => {
+                const isHidden = body.classList.contains('hidden');
+                const gradingPanel = document.getElementById('grading-panel');
+
+                if (isHidden) {
+                    // --- New logic to prevent flicker ---
+                    // 1. Prepare for measurement: disable transitions and reset position.
+                    body.classList.add('no-transition');
+                    body.classList.remove('flipped');
+
+                    // 2. Use 'visibility: hidden' to measure the element without it being visible or causing flicker.
+                    // The element is already absolutely positioned via CSS, so it won't cause layout shift.
+                    body.style.visibility = 'hidden';
+                    body.classList.remove('hidden');
+                    autoSizeTextarea(textarea);
+
+                    // 3. Measure its position now that it has the correct dimensions.
+                    const panelRect = gradingPanel.getBoundingClientRect();
+                    const bodyRect = body.getBoundingClientRect();
+
+                    // 4. Decide if it needs to be flipped based on its potential position.
+                    if (bodyRect.right > panelRect.right) {
+                        body.classList.add('flipped');
+                    }
+
+                    // 5. Reset visibility. The element will now appear in its final, correct position.
+                    body.style.visibility = '';
+
+                    // 6. Re-enable transitions for a smooth closing animation.
+                    setTimeout(() => {
+                        body.classList.remove('no-transition');
+                    }, 20); // Small delay to ensure the opening isn't animated
+                } else {
+                    body.classList.add('hidden');
+                }
+            });
+
+            textarea.addEventListener('input', () => autoSizeTextarea(textarea));
+            autoSizeTextarea(textarea); // Initial size check
+        }
+
+        function initializeCommentWidgets() {
+            document.querySelectorAll('.comment-widget').forEach(setupCommentWidget);
+        }
+
+        function createCommentWidget(x, y, container) {
+            const widget = document.createElement('div');
+            widget.className = 'comment-widget';
+            widget.style.left = `${x}px`;
+            widget.style.top = `${y}px`;
+            widget.style.setProperty('--ai-comment', '#3b82f6'); // Default color
+            widget.id = `comment-${Date.now()}-${Math.random()}`; // Assign a unique ID
+
+            widget.innerHTML = ``;
+            // Standalone comments get a drag handle and a more prominent toggle button.
+            widget.innerHTML = ` 
+                <button class="comment-toggle comment-drag-handle">
+                    <span class="material-symbols-outlined">chat_bubble</span>
+                </button>
+                    <div class="comment-body hidden bg-white dark:bg-surface-dark border border-gray-200 dark:border-border-dark rounded-lg shadow-lg">
+                    <textarea class="p-2 text-gray-900 dark:text-text-dark focus:ring-primary focus:border-primary border-none rounded-md text-sm comment-textarea" placeholder="Add a comment..."></textarea>
+                    </div>
+                `;
+
+            container.appendChild(widget);
+            setupCommentWidget(widget); // Set up listeners only for the new widget
+            widget.querySelector('textarea').focus();
+        }
+
+        addCommentBtn.addEventListener('click', () => {
+            const gradingPanel = document.getElementById('grading-panel');
+            const firstOverlayContainer = document.getElementById('grading-overlay-container');
+            if (!firstOverlayContainer) {
+                console.error("No grading overlay container found to add a comment.");
+                return;
+            }
+
+            // Position the new comment in the center of the current view
+            const panelRect = gradingPanel.getBoundingClientRect();
+            const x = (panelRect.width / 2) - 140; // 140 is half of the expanded comment width
+            const y = gradingPanel.scrollTop + (panelRect.height / 2) - 70; // 70 is approx half height
+
+            createCommentWidget(x, y, firstOverlayContainer);
+        });
+
+        // --- Setup Drop Zone for Comments ---
+        gradingPanel.addEventListener('dragover', (e) => {
+            // Check if we are dragging a comment widget
+            if (draggedElement || draggedComment) {
+                e.preventDefault(); // Allow the drop
+                // We no longer need to manually update the position here.
+                // The browser's ghost image provides the visual feedback.
+            }
+        });
+
+        gradingPanel.addEventListener('drop', (e) => {
+            e.preventDefault();
+
+            if ((draggedComment && e.dataTransfer.types.includes('application/x-comment-widget-id')) || (draggedElement && e.dataTransfer.types.includes('application/x-grading-checkpoint-id'))) {
+                handleDrop(e);
+            }
+        });
+
+
+        function createFilterChip(type, value, dataKey) {
+            const chip = document.createElement('span');
+            chip.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-primary/20 text-primary group';
+            chip.innerHTML = `
+                ${type}: ${value}
+                <button type="button" class="flex items-center justify-center h-4 w-4 rounded-full bg-primary/30 text-primary-light hover:bg-primary hover:text-white transition" data-filter-type="${dataKey}">
+                    <span class="material-symbols-outlined text-xs">close</span>
+                </button>
+            `;
+            activeFiltersContainer.appendChild(chip);
+            chip.querySelector('button').addEventListener('click', (e) => {
+                const filterType = e.currentTarget.getAttribute('data-filter-type');
+                if (filterType === "student") {
+                    studentSelect.value = "";
+                } else if (filterType === "question") {
+                    questionSelect.value = "";
+                }
+                renderStudentExamsList(window.currentRepository, () => {
+                    setupChecklistClickHandlers();
+                    setupWorkloadClickHandlers();
+                });
+            });
+        }
+        // Attach event listeners to filters
+        // studentSelect.addEventListener('change', applyFilters);
+        // questionSelect.addEventListener('change', applyFilters);
+
+        // Attach event listeners to workload buttons
+        function setupWorkloadClickHandlers() {
+            workloadButtons = document.querySelectorAll('.workload-button');
+            workloadButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const questionId = button.dataset.questionId;
+                    // If the button is already active, clicking it again deactivates the filter.
+                    if (questionSelect.value === questionId) {
+                        questionSelect.value = "";
+                    } else {
+                        questionSelect.value = questionId;
+                    }
+                    renderStudentExamsList(window.currentRepository, () => {
+                        setupChecklistClickHandlers();
+                        setupWorkloadClickHandlers();
+                    });
+                });
+            });
+        }
+
+        function initializeScrollToRubricButtons() {
+            document.querySelectorAll('.scroll-to-rubric-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent any parent click handlers
+
+                    const sourceCheckpoint = button.closest('.grading-checkpoint-group');
+                    const isReferenceTabActive = !document.getElementById('reference-content').classList.contains('hidden');
+
+                    if (!sourceCheckpoint || !sourceCheckpoint.id) return; // e.g., 'source1'
+
+                    let targetId;
+                    let targetPanel;
+
+                    if (isReferenceTabActive) {
+                        targetId = sourceCheckpoint.id.replace('source', 'ref-target');
+                        targetPanel = document.getElementById('reference-content');
+                    } else {
+                        targetId = sourceCheckpoint.id.replace('source', 'target');
+                        targetPanel = document.getElementById('rubric-content');
+                    }
+
+                    const targetElement = document.getElementById(targetId);
+
+                    if (targetElement && targetPanel) {
+                        // Scroll the correct panel to the target element
+                        targetPanel.scrollTo({
+                            top: targetElement.offsetTop - targetPanel.offsetTop - 20, // 20px offset for padding
+                            behavior: 'smooth'
+                        });
+
+                        // Add a temporary highlight to the target
+                        targetElement.classList.add('highlight-checkpoint');
+                        setTimeout(() => targetElement.classList.remove('highlight-checkpoint'), 2000);
+                    }
+                });
+
+                // Dynamically update the hover title
+                button.addEventListener('mouseenter', () => {
+                    const isReferenceTabActive = !document.getElementById('reference-content').classList.contains('hidden');
+                    if (isReferenceTabActive) {
+                        button.title = 'Scroll to relevant reference';
+                    } else {
+                        button.title = 'Scroll to rubric criterion';
+                    }
+                });
+            });
+        }
+
+        function setupChecklistClickHandlers() {
+            pendingTasks = document.querySelectorAll('.completion-checklist-item');
+            document.querySelectorAll('.completion-checklist-item').forEach(task => {
+
+                task.addEventListener('click', () => {
+                    // Remove 'current' from previously selected task
+                    const currentTask = document.querySelector('.completion-checklist-item.current');
+                    if (currentTask) {
+                        currentTask.classList.remove('current', 'border', 'border-primary', 'text-gray-900', 'dark:text-white');
+                        // Also revert the status text color
+                        const statusDiv = currentTask.querySelector('.py-1.px-3.text-sm');
+                        if (statusDiv) {
+                            statusDiv.classList.remove('bg-primary/10', 'text-primary-light');
+                            // Re-apply original status styles based on its data-status attribute.
+                            const status = currentTask.dataset.status;
+                            // New logic: check if parent task should be un-completed
+                            const [studentName, questionId] = currentTask.querySelector('.flex.items-center.gap-2').textContent.trim().split(' - ');
+                            const parentQuestion = window.currentRepository?.questions.find(q => q.subquestions?.some(sq => sq.id === questionId));
+                            if (parentQuestion) {
+                                const parentTaskName = `${studentName} - ${parentQuestion.id}`;
+                                const parentTaskElement = Array.from(document.querySelectorAll('.completion-checklist-item')).find(el => el.querySelector('.flex.items-center.gap-2').textContent.trim() === parentTaskName);
+                                if (parentTaskElement && parentTaskElement.dataset.status === 'completed') {
+                                    parentTaskElement.dataset.status = 'in-progress'; // Or 'not-started'
+                                    const parentStatusDiv = parentTaskElement.querySelector('.py-1.px-3.text-sm');
+                                    parentStatusDiv.textContent = 'In Progress';
+                                    parentStatusDiv.className = 'py-1 px-3 text-sm rounded-b-md bg-primary/10 text-primary-light';
+
+                                    // Also remove from session storage
+                                    const completedTasks = new Set(JSON.parse(sessionStorage.getItem(COMPLETED_TASKS_KEY) || '[]'));
+                                    if (completedTasks.has(parentTaskName)) {
+                                        completedTasks.delete(parentTaskName);
+                                        sessionStorage.setItem(COMPLETED_TASKS_KEY, JSON.stringify(Array.from(completedTasks)));
+                                    }
+                                }
+                            }
+                            if (status === 'not-started') statusDiv.classList.add('bg-gray-700/20', 'text-text-muted-dark');
+                            else if (status === 'completed') statusDiv.classList.add('bg-success/10', 'text-success-light');
+                            else if (status === 'in-progress') statusDiv.classList.add('bg-primary/10', 'text-primary-light');
+                        }
+                        currentTask.classList.add('hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'dark:hover:text-primary-light', 'text-gray-500', 'dark:text-gray-400');
+                    }
+
+                    // Add 'current' to clicked task
+                    task.classList.add('current', 'border', 'border-primary', 'text-gray-900', 'dark:text-white');
+                    task.classList.remove('hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'dark:hover:text-primary-light', 'text-gray-500', 'dark:text-gray-400');
+
+                    const taskText = task.querySelector('.flex.items-center.gap-2').textContent.trim(); // e.g., "Student A - Q3A"
+                    const [studentName, questionId] = taskText.split(' - ');
+
+                    const repo = window.currentRepository;
+                    const studentSubmission = repo?.studentSubmissions.find(s => s.name === studentName);
+                    const pdfUrl = studentSubmission?.url;
+                    let questionData = null;
+
+                    let pageNumber = null;
+                    if (repo && questionId) {
+                        const findQuestion = (questions, id) => {
+                            for (const question of questions) {
+                                // Check if the parent question ID matches
+                                if (question.id === id) return question;
+                                // If not, check if any subquestion ID matches
+                                if (question.subquestions) {
+                                    const subquestion = question.subquestions.find(sub => sub.id === id);
+                                    if (subquestion) return subquestion;
+                                }
+                            }
+                            return null;
+                        };
+                        questionData = findQuestion(repo.questions, questionId); // This will find the subquestion object
+
+                        // If it's a subquestion, find its parent to get the page number.
+                        const parentQuestion = repo.questions.find(q => q.subquestions?.some(sq => sq.id === questionId));
+                        const questionForPage = parentQuestion || questionData; // Use parent if it exists, otherwise the question itself
+
+                        if (questionForPage?.pages) {
+                            pageNumber = String(questionForPage.pages).split('-')[0].trim();
+                        }
+                    }
+
+                    if (pdfUrl && pdfUrl !== 'assets/exams/no-exam-uploaded.pdf') {
+                        // Find the header and the main panel container
+                        const header = examViewContainer.querySelector('#exam-view-header');
+
+                        // Clear the container but keep the header
+                        while (examViewContainer.children.length > 1) {
+                            examViewContainer.removeChild(examViewContainer.lastChild);
+                        }
+
+                        // Append the PDF viewer structure from the template
+                        const templateEl = document.createElement('div');
+                        templateEl.innerHTML = examViewTemplate.trim();
+                        Array.from(templateEl.children).forEach(child => examViewContainer.appendChild(child));
+
+                        // --- FIX: Reset Scroll Position Immediately ---
+                        const gradingPanel = document.getElementById('grading-panel');
+                        if (gradingPanel) {
+                            gradingPanel.scrollTop = 0;
+                        }
+                        // ---------------------------------------------
+
+                        // Re-initialize all JS functionalities for the restored view
+                        renderGradingCheckpoints(repo, questionId, studentSubmission);
+                        gradingCheckpointsContainer = document.getElementById('grading-checkpoints');
+                        initializeCheckpoints();
+                        setupFinalizeButton();
+                        setupPointsInputs();
+                        updateTotalGrade();
+                        initializeCommentWidgets();
+                        initializeDraggableCheckpoints();
+                        initializeScrollToRubricButtons();
+                        // Render the specific student PDF and page
+                        document.getElementById('exam-title').textContent = `Student Exam: ${studentName} (${questionId})`;
+                        const maxGradeSpan = document.getElementById('max-total-grade');
+                        const totalForSpan = document.querySelector('.sticky .flex.items-center.gap-1 span');
+                        if (maxGradeSpan && questionData) {
+                            let totalPoints = 0;
+                            if (questionData.points) {
+                                totalPoints = questionData.points;
+                            } else if (questionData.subquestions) {
+                                totalPoints = questionData.subquestions.reduce((sum, sq) => sum + (sq.points || 0), 0);
+                            }
+                            maxGradeSpan.textContent = totalPoints;
+                            if (totalForSpan) totalForSpan.textContent = `Total for ${questionId.replace('Q', 'Question ')}:`;
+                        }
+                        window.initializePdfViewer(pdfUrl, pageNumber);
+                        window.initializeRubricViewer();
+                    } else { // This handles the case where no PDF is associated with the submission
+                        // Show "No exam uploaded" message
+                        examViewContainer.innerHTML = `<div class="p-4 border-b border-border-dark flex items-center gap-2"><span class="material-symbols-outlined text-primary">person</span><h2 class="font-display font-bold text-lg text-text-dark">Student Exam: ${taskText}</h2></div><div class="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-900 rounded-b-xl"><div class="text-center p-8"><span class="material-symbols-outlined text-5xl text-text-muted-dark mb-4">draft</span><h3 class="text-xl font-bold text-text-dark">No Exam Uploaded</h3><p class="text-text-muted-dark mt-2">There is no exam submission available for this item yet.</p></div></div>`;
+                    }
+                });
+            });
+        }
+        // --- Tab Switching Logic ---
+        function renderGradingCheckpoints(repo, questionId, studentSubmission) {
+            // DEBUG: If you don't see this in the console, the old code is still running!
+            console.log("Applying HORIZONTAL UI updates...");
+
+            const overlayContainer = document.getElementById('grading-overlay-container');
+            if (!overlayContainer) return;
+
+            overlayContainer.innerHTML = '';
+
+            const rubricOverlay = document.getElementById('rubric-overlay-container');
+            if (rubricOverlay) rubricOverlay.innerHTML = '';
+
+            // --- 1. Find Question Data ---
+            const findQuestion = (questions, id) => {
+                for (const q of questions) {
+                    if (q.id === id) return q;
+                    if (q.subquestions) {
+                        const subQ = q.subquestions.find(sub => sub.id === id);
+                        if (subQ) return subQ;
+                    }
+                }
+                return null;
+            };
+            const questionData = findQuestion(repo.questions, questionId);
+            let checkpoints = repo.gradingCheckpoints?.filter(cp => cp.questionId === questionId) || [];
+
+            // Fallback search for checkpoints
+            if (checkpoints.length === 0) {
+                const currentQuestion = repo.questions.find(q => q.id === questionId);
+                if (currentQuestion?.subquestions) {
+                    const sub = currentQuestion.subquestions.find(s => repo.gradingCheckpoints.some(cp => cp.questionId === s.id));
+                    if (sub) checkpoints = repo.gradingCheckpoints.filter(cp => cp.questionId === sub.id);
+                } else {
+                    const parent = repo.questions.find(q => q.subquestions?.some(sub => sub.id === questionId));
+                    if (parent) {
+                        const sibling = parent.subquestions.find(sub => repo.gradingCheckpoints.some(cp => cp.questionId === sub.id));
+                        if (sibling) checkpoints = repo.gradingCheckpoints.filter(cp => cp.questionId === sibling.id);
+                    }
+                }
+            }
+
+            // --- 2. Render Each Checkpoint (Horizontal Bar Style) ---
+            checkpoints.forEach((cp, index) => {
+                const checkpointWrapper = document.createElement('div');
+                const checkpointId = `source${index + 1}`;
+
+                let maxPoints = questionData?.points || 0;
+                if (questionData?.subquestions?.length > 0) {
+                    maxPoints = questionData.subquestions.reduce((sum, sq) => sum + (sq.points || 0), 0);
+                }
+
+                const gradeEntry = studentSubmission?.grades?.find(g => g.questionId === questionId) || {};
+                const aiConfidence = gradeEntry.confidence || 0;
+                const aiSuggestedPoints = gradeEntry.aiSuggestedScore || 0;
+                const aiComment = gradeEntry.comment || '';
+
+                // Confidence Colors (Inline styles to bypass CSS issues)
+                let pillBg = 'rgba(239, 68, 68, 0.15)'; // Red
+                let pillText = '#f87171';
+                if (aiConfidence > 80) {
+                    pillBg = 'rgba(16, 185, 129, 0.15)';
+                    pillText = '#34d399';
+                } // Green
+                else if (aiConfidence > 50) {
+                    pillBg = 'rgba(234, 179, 8, 0.15)';
+                    pillText = '#facc15';
+                } // Yellow
+
+                checkpointWrapper.className = 'absolute inset-x-0 bottom-0 h-full flex flex-col justify-end items-center pointer-events-none';
+
+                const checkpointEl = document.createElement('div');
+                checkpointEl.id = checkpointId;
+
+                // CONTAINER STYLE: Fixed height, dark bg, flex row
+                checkpointEl.className = 'group grading-checkpoint-group pointer-events-auto mb-6 transition-transform shadow-2xl';
+                checkpointEl.style.cssText = `
+            width: 500px; 
+            max-width: 95%; 
+            background-color: #1e293b; 
+            border: 1px solid #334155; 
+            border-radius: 12px;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            height: 54px; /* Forces the bar shape */
+        `;
+                checkpointEl.dataset.maxPoints = maxPoints;
+
+                // HTML CONTENT: Single Row Flexbox
+                checkpointEl.innerHTML = `
+            <div class="flex items-center gap-3 pr-4 border-r border-gray-700 cursor-move grading-drag-handle">
+                <span class="material-symbols-outlined text-gray-500 text-sm">drag_indicator</span>
+                <span class="font-bold text-sm text-gray-100 whitespace-nowrap">CP ${index + 1}</span>
+            </div>
+
+            <div class="flex-1 flex items-center gap-3 px-4">
+                <span style="background: ${pillBg}; color: ${pillText}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">
+                    ${aiConfidence}%
+                </span>
+                
+                <div class="flex flex-col leading-none">
+                    <span class="text-[10px] text-gray-400 uppercase">AI Sugg.</span>
+                    <span class="text-xs font-medium text-gray-200">${aiSuggestedPoints}/${maxPoints}</span>
+                </div>
+
+                <div class="w-px h-8 bg-gray-700 mx-1"></div>
+
+                <div class="flex items-center gap-2">
+                    <label class="text-xs text-gray-400 font-medium">Grade:</label>
+                    <input type="number" min="0" max="${maxPoints}" placeholder="-"
+                        class="points-input"
+                        style="width: 40px; background: #0f172a; border: 1px solid #4b5563; color: white; border-radius: 4px; text-align: center; font-weight: bold; height: 28px;"
+                    >
+                    <span class="text-xs text-gray-500">/${maxPoints}</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-1 pl-2">
+                <button class="comment-toggle hover:bg-white/5 p-1.5 rounded transition-colors text-gray-400 hover:text-blue-400" title="Comment">
+                    <span class="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
+                </button>
+                <button class="scroll-to-rubric-btn hover:bg-white/5 p-1.5 rounded transition-colors text-gray-400 hover:text-blue-400" title="Rubric">
+                    <span class="material-symbols-outlined text-[18px]">menu_book</span>
+                </button>
+            </div>
+
+            <div class="comment-body hidden absolute bottom-full left-0 mb-2 w-full bg-[#1e293b] border border-gray-600 rounded-lg shadow-xl p-2 z-50">
+                <textarea class="w-full bg-transparent text-white text-sm p-1 border-none focus:ring-0 resize-none" rows="2" placeholder="Add comment...">${aiComment}</textarea>
+            </div>
+        `;
+
+                checkpointWrapper.appendChild(checkpointEl);
+                overlayContainer.appendChild(checkpointWrapper);
+
+                // Re-add rubric highlights logic
+                if (rubricOverlay) {
+                    const rubricTarget = document.createElement('div');
+                    rubricTarget.id = `target${index + 1}`;
+                    rubricTarget.className = 'absolute pointer-events-auto p-2 my-2 border-2 border-orange-400 rounded-md bg-orange-400/10';
+                    const rubricCanvas = document.querySelector(`#rubric-viewer-container canvas:nth-child(${cp.rubricPage || 1})`);
+                    if (rubricCanvas) {
+                        rubricTarget.style.top = `${rubricCanvas.offsetTop + (rubricCanvas.offsetHeight * 0.3)}px`;
+                        rubricTarget.style.left = '10%';
+                        rubricTarget.style.width = '80%';
+                        rubricTarget.style.height = '10%';
+                    }
+                    rubricOverlay.appendChild(rubricTarget);
+                }
+            });
+
+            // Essential: Re-initialize Listeners for the newly created elements
+            setupPointsInputs();
+            setupArrows();
+            initializeCommentWidgets();
+            initializeScrollToRubricButtons();
+
+            // --- FIX: Manually initialize Checkpoint Comments ---
+            // This explicitly finds the toggle and body within the newly created checkpoints
+            // and attaches the listener safely, preventing the "null" error.
+            document.querySelectorAll('.grading-checkpoint-group').forEach(group => {
+                const toggle = group.querySelector('.comment-toggle');
+                const body = group.querySelector('.comment-body');
+
+                if (toggle && body) {
+                    toggle.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent drag or parent click events
+                        const isHidden = body.classList.contains('hidden');
+                        if (isHidden) {
+                            body.classList.remove('hidden');
+                            const ta = body.querySelector('textarea');
+                            if (ta) {
+                                ta.focus();
+                                // Prevent typing in the box from dragging the checkpoint bar
+                                ta.addEventListener('mousedown', (evt) => evt.stopPropagation());
+                            }
+                        } else {
+                            body.classList.add('hidden');
+                        }
+                    });
+                }
+            });
+        }
+
+        const rubricTabBtn = document.getElementById('rubric-tab-btn');
+        const referenceTabBtn = document.getElementById('reference-tab-btn');
+        const broadcastsTabBtn = document.getElementById('broadcasts-tab-btn');
+        const rubricContent = document.getElementById('rubric-content');
+        const rightPanelFooter = document.getElementById('right-panel-footer');
+        const pdfZoomControls = document.getElementById('pdf-zoom-controls');
+        const referenceContent = document.getElementById('reference-content');
+        const broadcastsContent = document.getElementById('broadcasts-content');
+
+        const tabs = [
+            { btn: rubricTabBtn, content: rubricContent, renderFunc: window.initializeRubricViewer, id: 'rubric' },
+            { btn: referenceTabBtn, content: referenceContent, renderFunc: window.initializeReferenceViewer, id: 'reference' },
+            { btn: broadcastsTabBtn, content: broadcastsContent, renderFunc: () => loadAndDisplayBroadcasts(document.getElementById('broadcast-feed-list'), isShowingArchivedGrading), id: 'broadcasts' }
+        ];
+
+        tabs.forEach(tab => {
+            if (!tab.btn) return;
+            tab.btn.addEventListener('click', () => {
+                // Deactivate all tabs first
+                tabs.forEach(t => {
+                    if (!t.btn) return;
+                    t.btn.classList.remove('text-primary', 'border-primary', 'bg-primary/10');
+                    t.btn.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'border-transparent');
+                    if (t.content) t.content.classList.add('hidden');
+                });
+
+                if (tab.id === 'broadcasts') {
+                    pdfZoomControls.classList.add('hidden');
+                    rightPanelFooter.classList.add('hidden');
+                } else {
+                    pdfZoomControls.classList.remove('hidden');
+                    rightPanelFooter.classList.remove('hidden');
+                }
+
+
+                // Activate the clicked tab
+                tab.btn.classList.add('text-primary', 'border-primary', 'bg-primary/10');
+                tab.btn.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'border-transparent');
+                if (tab.content) {
+                    tab.content.classList.remove('hidden');
+                    // Render PDF on first view
+                    if (tab.renderFunc && !pdfRenderCache[tab.id]) {
+                        console.log(`First render for ${tab.id}`);
+                        tab.renderFunc();
+                        pdfRenderCache[tab.id] = true;
+                    }
+                }
+
+                // Redraw arrows for the active tab
+                setupArrows();
+
+                // Show the correct dropdown
+                const rubricSelector = document.getElementById('rubric-selector-container');
+                const referenceSelector = document.getElementById('reference-selector-container');
+                rubricSelector.classList.toggle('hidden', tab.id !== 'rubric');
+                referenceSelector.classList.toggle('hidden', tab.id !== 'reference');
+
+            });
+        });
+
+        // --- Zoom Controls Logic ---
+        const zoomInBtn = document.getElementById('zoom-in-btn');
+        const zoomOutBtn = document.getElementById('zoom-out-btn');
+        const zoomResetBtn = document.getElementById('zoom-reset-btn');
+        const zoomLevelDisplay = document.getElementById('zoom-level-display');
+
+        function getActivePdfTabId() {
+            if (!rubricContent.classList.contains('hidden')) return 'rubric';
+            if (!referenceContent.classList.contains('hidden')) return 'reference';
+            return null;
+        }
+
+        function updateZoomDisplay(tabId) {
+            const level = zoomLevels[tabId];
+            if (level === null) {
+                zoomLevelDisplay.textContent = 'Fit';
+            } else {
+                zoomLevelDisplay.textContent = `${Math.round(level * 100)}%`;
+            }
+        }
+
+        zoomInBtn.addEventListener('click', () => {
+            const tabId = getActivePdfTabId();
+            if (!tabId) return;
+            let currentZoom = zoomLevels[tabId] || 1.0; // Start from 100% if fitting
+            zoomLevels[tabId] = Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP);
+            tabs.find(t => t.id === tabId)?.renderFunc();
+        });
+
+        zoomOutBtn.addEventListener('click', () => {
+            const tabId = getActivePdfTabId();
+            if (!tabId) return;
+            let currentZoom = zoomLevels[tabId] || 1.0;
+            zoomLevels[tabId] = Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP);
+            tabs.find(t => t.id === tabId)?.renderFunc();
+        });
+
+        zoomResetBtn.addEventListener('click', () => {
+            const tabId = getActivePdfTabId();
+            if (!tabId) return;
+            zoomLevels[tabId] = null; // Signal to fit to width
+            tabs.find(t => t.id === tabId)?.renderFunc();
+        });
+
+        // --- PDF Selector Logic ---
+        const rubricSelector = document.getElementById('rubric-selector');
+        const referenceSelector = document.getElementById('reference-selector');
+
+        rubricSelector.addEventListener('change', (e) => {
+            window.initializeRubricViewer(e.target.value);
+        });
+        referenceSelector.addEventListener('change', (e) => {
+            window.initializeReferenceViewer(e.target.value);
+        });
+
+        // --- Broadcasts Logic ---
+        const broadcastForm = document.getElementById('broadcast-form');
+        const broadcastFeedList = document.getElementById('broadcast-feed-list');
+        const cancelBroadcastFormBtn = document.getElementById('cancel-broadcast-form-btn');
+        const showBroadcastFormBtn = document.getElementById('show-broadcast-form-btn');
+
+        if (broadcastForm) {
+            broadcastForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const titleInput = document.getElementById('broadcast-title');
+                const descriptionInput = document.getElementById('broadcast-description');
+                const title = titleInput.value.trim();
+                const description = descriptionInput.value.trim();
+                const type = document.getElementById('broadcast-type').value;
+                const referenceExamCheckbox = document.getElementById('reference-exam-checkbox');
+
+                if (!title || !description) return;
+
+                const broadcastData = { title, description, type };
+
+                if (referenceExamCheckbox.checked) {
+                    const examTitleElement = document.getElementById('exam-title');
+                    const examTitleText = examTitleElement.textContent || ''; // "Student Exam: Alex Doe (Q3A)"
+                    const studentMatch = examTitleText.match(/Student Exam: (.*?)\s*\(/);
+                    const questionMatch = examTitleText.match(/\(([^)]+)\)/);
+
+                    if (studentMatch && questionMatch) {
+                        broadcastData.examLink = {
+                            student: studentMatch[1].trim(),
+                            question: questionMatch[1].trim()
+                        };
+                    }
+                }
+
+                const newBroadcast = createBroadcast(broadcastData);
+                const newEntry = renderBroadcastItem(newBroadcast);
+
+                // If the placeholder is there, remove it
+                const placeholder = broadcastFeedList.querySelector('.text-center');
+                if (placeholder) placeholder.style.display = 'none';
+
+                broadcastFeedList.prepend(newEntry);
+
+                // Clear form
+                titleInput.value = '';
+                descriptionInput.value = '';
+                referenceExamCheckbox.checked = false;
+                document.getElementById('broadcast-form-container').classList.add('hidden');
+                showBroadcastFormBtn.classList.remove('hidden');
+            });
+        }
+
+        if (showBroadcastFormBtn) {
+            showBroadcastFormBtn.addEventListener('click', () => {
+                document.getElementById('broadcast-form-container').classList.remove('hidden');
+                showBroadcastFormBtn.classList.add('hidden');
+            });
+        }
+
+        if (cancelBroadcastFormBtn) {
+            cancelBroadcastFormBtn.addEventListener('click', () => {
+                document.getElementById('broadcast-form-container').classList.add('hidden');
+                showBroadcastFormBtn.classList.remove('hidden');
+
+                // Clear form fields
+                document.getElementById('broadcast-title').value = '';
+                document.getElementById('broadcast-description').value = '';
+                document.getElementById('broadcast-type').value = 'Information';
+                document.getElementById('reference-exam-checkbox').checked = false;
+            });
+        }
+
+        // --- Grading Portal Broadcast Archive Logic ---
+        const toggleArchiveBtnGrading = document.getElementById('toggle-archive-view-btn-grading');
+        const broadcastTitleHeader = document.getElementById('broadcast-title-header');
+        let isShowingArchivedGrading = false;
+
+        if (toggleArchiveBtnGrading) {
+            toggleArchiveBtnGrading.addEventListener('click', () => {
+                isShowingArchivedGrading = !isShowingArchivedGrading;
+                const icon = toggleArchiveBtnGrading.querySelector('span');
+                const formAndButtonContainer = document.getElementById('broadcast-form-container').parentElement;
+
+                if (isShowingArchivedGrading) {
+                    broadcastTitleHeader.textContent = 'Archived Broadcasts';
+                    icon.textContent = 'unarchive';
+                    toggleArchiveBtnGrading.title = 'View Live Broadcasts';
+                    formAndButtonContainer.classList.add('hidden');
+                } else {
+                    broadcastTitleHeader.textContent = 'Broadcasts';
+                    icon.textContent = 'archive';
+                    toggleArchiveBtnGrading.title = 'View Archived';
+                    formAndButtonContainer.classList.remove('hidden');
+                }
+
+                // Reload the list with the correct view
+                loadAndDisplayBroadcasts(broadcastFeedList, isShowingArchivedGrading);
+            });
+        }
+
+        function checkBroadcastAvailability() {
+            const showBroadcastFormBtn = document.getElementById('show-broadcast-form-btn');
+            const hasRepo = !!window.currentRepository;
+            showBroadcastFormBtn.disabled = !hasRepo;
+            showBroadcastFormBtn.classList.toggle('opacity-50', !hasRepo);
+            showBroadcastFormBtn.classList.toggle('cursor-not-allowed', !hasRepo);
+        }
+
+        // renderLeftPanel logic moved to assets/js/grading-exams-list.js
+
+        // --- Manual Grading Status Logic ---
+        const examItemContextMenu = document.getElementById('exam-item-context-menu');
+        let currentContextItem = null;
+
+        function saveRepositoryToSession() {
+            if (window.currentRepository) {
+                sessionStorage.setItem(REPO_STORAGE_KEY, JSON.stringify(window.currentRepository));
+                // Dispatch event to notify other components if needed (though mostly local here)
+            }
+        }
+
+        // updateManualGradingStatus logic moved to assets/js/grading-exams-list.js
+
+        // Context Menu Event Listeners
+        if (examItemContextMenu) {
+            examItemContextMenu.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (!currentContextItem) return;
+                    const action = btn.dataset.action;
+                    const { studentName, questionId } = currentContextItem;
+
+                    let newStatus = 0; // Default 'reset'
+                    if (action === 'graded-once') newStatus = 1;
+                    if (action === 'graded-twice') newStatus = 2;
+
+                    updateManualGradingStatus(window.currentRepository, studentName, questionId, newStatus, () => {
+                        setupChecklistClickHandlers();
+                        setupWorkloadClickHandlers();
+                    });
+                    examItemContextMenu.classList.add('hidden');
+                });
+            });
+        }
+
+        // Close context menu on click outside
+        document.addEventListener('click', (e) => {
+            if (examItemContextMenu && !examItemContextMenu.contains(e.target)) {
+                examItemContextMenu.classList.add('hidden');
+            }
+        });
+
+        // Listen for storage changes (e.g. slider updates in index.html)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'aiConfidenceThreshold' || e.key === 'studentScoreThreshold' || e.key === REPO_STORAGE_KEY) {
+                // Reload repo if it changed
+                if (e.key === REPO_STORAGE_KEY && e.newValue) {
+                    window.currentRepository = JSON.parse(e.newValue);
+                }
+                // Re-render list
+                renderLeftPanel(window.currentRepository);
+            }
+        });
+
+        function setupFinalizeButton() {
+            finalizeGradeButton = document.getElementById('finalize-grade-button');
+            if (!finalizeGradeButton) return;
+
+            finalizeGradeButton.addEventListener('click', () => {
+                const currentTask = document.querySelector('.completion-checklist-item.current');
+                if (!currentTask) return;
+
+                const taskText = currentTask.querySelector('.flex.items-center.gap-2').textContent.trim();
+                // Extract student name and question ID
+                // Format: "Student Name - QuestionID"
+                const parts = taskText.split(' - ');
+                const questionId = parts.pop();
+                const studentName = parts.join(' - ');
+
+                // Get current status from dataset or repo
+                const repo = window.currentRepository;
+                const student = repo?.studentSubmissions.find(s => s.name === studentName);
+                const grade = student?.grades.find(g => g.questionId === questionId);
+                const currentStatus = grade?.manualStatus || 0;
+
+                // Increment Status (0 -> 1, 1 -> 2, 2 -> 2)
+                let newStatus = currentStatus + 1;
+                if (newStatus > 2) newStatus = 2;
+
+                updateManualGradingStatus(window.currentRepository, studentName, questionId, newStatus, () => {
+                    setupChecklistClickHandlers();
+                    setupWorkloadClickHandlers();
+                });
+
+                // Disable button temporarily or update UI
+                // Since updateManualGradingStatus re-renders, the button state might reset if not handled.
+                // But usually finalize is for the *current* view.
+                // We might want to keep the button enabled if they want to click again to go to status 2?
+                // Or disable if it reached 2.
+                if (newStatus >= 2) {
+                    finalizeGradeButton.setAttribute('disabled', 'disabled');
+                    finalizeGradeButton.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            });
+        }
+        setupFinalizeButton();
+
+        initializeDraggableCheckpoints();
+        setupChecklistClickHandlers();
+        setupWorkloadClickHandlers();
+        initializeScrollToRubricButtons();
+        // Do not load a default PDF on start. Wait for user selection.
+
+        // --- Filter Event Listeners ---
+        document.getElementById('question-filter').addEventListener('change', () => {
+            renderStudentExamsList(window.currentRepository, () => {
+                setupChecklistClickHandlers();
+                setupWorkloadClickHandlers();
+            });
+        });
+        document.getElementById('student-filter').addEventListener('change', () => {
+            renderStudentExamsList(window.currentRepository, () => {
+                setupChecklistClickHandlers();
+                setupWorkloadClickHandlers();
+            });
+        });
+
+        // --- Responsive PDF Rendering ---
+        // Smart ResizeObserver: Only re-render if WIDTH changes significantly
+        let lastContainerWidth = 0;
+
+        new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const width = entry.contentRect.width;
+
+                // Ignore 0 width (hidden) or small changes (scrollbar flicker is ~15px, so we check > 20 or simply exact match stability)
+                // We check if width changed by more than 1px to avoid sub-pixel jitter
+                if (width > 0 && Math.abs(width - lastContainerWidth) > 1) {
+                    lastContainerWidth = width;
+
+                    const currentPdfCanvas = document.querySelector('#pdf-page-container canvas');
+                    // Only re-render if we actually have a PDF loaded
+                    if (window.initializePdfViewer && currentPdfCanvas) {
+                        // Use the globals stored by initializePdfViewer
+                        window.initializePdfViewer(window.currentPdfUrl, window.currentPageNumber);
+                    }
+                }
+            }
+        }).observe(document.getElementById('grading-panel'));
+
+        new ResizeObserver(() => setupArrows()).observe(mainPanel);
+    </script>
+    <script src="broadcast.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.6.347/pdf.min.js"></script>
+</body>
+
+</html>
