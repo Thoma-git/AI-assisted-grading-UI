@@ -54,7 +54,7 @@ export async function loadStudentExam(student, questionId) {
     if (examTitle) examTitle.textContent = `${student.name} (${questionId})`;
 
     // Reset the container
-    document.getElementById('grading-panel').innerHTML = '<div id="pdf-page-container" class="relative min-h-full flex flex-col items-center pb-32"><div id="grading-overlay-container" class="absolute inset-0 pointer-events-none z-10"></div></div>';
+    document.getElementById('grading-panel').innerHTML = '<div id="pdf-page-container" class="relative min-h-full w-full flex flex-col items-center pb-32"><div id="grading-overlay-container" class="absolute inset-0 pointer-events-none z-10"></div></div>';
 
     const pdfUrl = student.url || 'assets/exams/dummy-exam.pdf';
 
@@ -84,19 +84,29 @@ export async function loadStudentExam(student, questionId) {
         }
     }
 
+    console.log(`[GradingView] loadStudentExam called for ${student.name}, ${questionId}`);
+    console.trace("[GradingView] Trace for loadStudentExam call:");
+
     // Initialize viewer
-    await window.initializePdfViewer(pdfUrl, pageNumber);
+    const success = await window.initializePdfViewer(pdfUrl, pageNumber);
+    if (!success) {
+        console.log(`[GradingView] PDF initialization cancelled or failed for ${questionId}. Aborting checkpoint render.`);
+        return;
+    }
 
     // Render UI elements
     renderGradingCheckpoints(questionId);
     renderComments(student.id, questionId);
     setupNavigationCircles(questionId);
 
+    // Trigger Rubric Load if tab is active
+    const rubricTabBtn = document.getElementById('rubric-tab-btn');
+    if (rubricTabBtn && rubricTabBtn.classList.contains('text-primary') && window.initializeRubricViewer) {
+        window.initializeRubricViewer();
+    }
+
     // Update totals immediately after render
     updateTotalScoreDisplay();
-
-    // Trigger calculation loop for positioning
-    calculateCheckpointBasePositions(0);
 }
 
 /**
@@ -127,6 +137,21 @@ function renderGradingCheckpoints(questionId) {
         }
     }
 
+    console.log(`[GradingView] Rendering checkpoints for ${questionId}. Found ${relevantCheckpoints.length} checkpoints.`);
+    const wrappers = document.querySelectorAll('.page-wrapper');
+    console.log(`[GradingView] Found ${wrappers.length} page wrappers in DOM.`);
+    wrappers.forEach(w => console.log(`[GradingView] Wrapper: Page ${w.getAttribute('data-page-number')}`));
+
+    // DEBUG: Visual Banner
+    let debugBanner = document.getElementById('debug-banner');
+    if (!debugBanner) {
+        debugBanner = document.createElement('div');
+        debugBanner.id = 'debug-banner';
+        debugBanner.style.cssText = 'position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: lime; padding: 10px; z-index: 9999; font-family: monospace; pointer-events: none;';
+        document.body.appendChild(debugBanner);
+    }
+    debugBanner.innerHTML = `Q: ${questionId} | CPs: ${relevantCheckpoints.length}<br>`;
+
     // Calculate Max Points for Input Validation (Per Checkpoint/Question)
     let maxPoints = 0;
     const qData = repo.questions.find(q => q.id === questionId) || repo.questions.find(q => q.subquestions?.some(sq => sq.id === questionId));
@@ -150,23 +175,56 @@ function renderGradingCheckpoints(questionId) {
         if (aiConfidence > 80) { pillBg = 'rgba(16, 185, 129, 0.2)'; pillText = '#34d399'; }
         else if (aiConfidence > 50) { pillBg = 'rgba(251, 191, 36, 0.2)'; pillText = '#fbbf24'; }
 
+        // Find the target page wrapper
+        let targetPage = cp.page || 1;
+        let pageWrapper = document.querySelector(`.page-wrapper[data-page-number="${targetPage}"]`);
+
+        // Fallback: If target page doesn't exist, use the last available page
+        let isFallback = false;
+        if (!pageWrapper) {
+            const allWrappers = document.querySelectorAll('.page-wrapper');
+            if (allWrappers.length > 0) {
+                pageWrapper = allWrappers[allWrappers.length - 1];
+                isFallback = true;
+            } else {
+                return;
+            }
+        }
+
+        const pageOverlay = pageWrapper.querySelector('.page-overlay');
+        if (!pageOverlay) return;
+
+        console.log(`[GradingView] Rendering checkpoint ${index + 1} on page ${targetPage} at ${cp.position.x}, ${cp.position.y}`);
+
         const el = document.createElement('div');
         el.id = `source${index + 1}`;
         el.className = 'absolute group bg-[#1e293b] rounded-lg shadow-lg pointer-events-auto select-none flex flex-col transition-transform transform-gpu';
 
+        // Use direct positioning (percentages) with centered anchor
         el.style.cssText = `
             width: 620px; 
             max-width: 95%; 
             left: ${cp.position.x}; 
-            transform: translateX(-50%); 
-            border: 1px solid #374151;
-            z-index: 20;
-            opacity: 0; 
-            transition: opacity 0.2s ease-in;
+            top: ${cp.position.y};
+            transform: translate(-50%, -50%); 
+            border: 1px solid ${isFallback ? '#f59e0b' : '#374151'};
+            z-index: 50;
         `;
+
+        // Add Fallback Warning if needed
+        let fallbackBanner = '';
+        if (isFallback) {
+            fallbackBanner = `
+                <div class="bg-amber-500/20 text-amber-500 text-xs font-bold px-3 py-1 border-b border-amber-500/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-sm mr-1">warning</span>
+                    Page ${targetPage} not found. Shown on Page ${pageWrapper.getAttribute('data-page-number')}.
+                </div>
+            `;
+        }
 
         // IMPORTANT: The input calls window.handleScoreChange with this checkpoint's specific ID
         el.innerHTML = `
+            ${fallbackBanner}
             <div class="flex items-center h-[50px] w-full bg-[#1e293b] rounded-lg overflow-hidden shadow-md border border-gray-700 select-none">
                 <div class="h-full flex items-center px-3 bg-gray-800/50 border-r border-gray-700 cursor-move handle hover:bg-gray-700/50 transition-colors flex-shrink-0">
                     <span class="material-symbols-outlined text-gray-500 text-lg mr-2">drag_indicator</span>
@@ -214,8 +272,8 @@ function renderGradingCheckpoints(questionId) {
             </div>
         `;
 
-        container.appendChild(el);
-        checkpoints.push({ data: cp, element: el, baseTop: 0 });
+        pageOverlay.appendChild(el);
+        checkpoints.push({ data: cp, element: el });
 
         // --- Event Listeners ---
         const handle = el.querySelector('.handle');
@@ -234,6 +292,7 @@ function renderGradingCheckpoints(questionId) {
                 el.querySelector('.rounded-tl-lg').classList.remove('rounded-bl-lg');
             } else {
                 commentBody.classList.add('hidden');
+                toggleBtn.classList.remove('text-blue-400', 'bg-blue-500/10');
                 toggleBtn.classList.remove('text-blue-400', 'bg-blue-500/10');
             }
         });
@@ -270,90 +329,14 @@ function renderGradingCheckpoints(questionId) {
     });
 }
 
-function calculateCheckpointBasePositions(retryCount = 0) {
-    const pdfContainer = document.getElementById('pdf-page-container');
-    const canvases = pdfContainer ? Array.from(pdfContainer.querySelectorAll('canvas')) : [];
-
-    if (canvases.length === 0 && retryCount < 20) {
-        setTimeout(() => calculateCheckpointBasePositions(retryCount + 1), 50);
-        return;
-    }
-
-    let avgHeight = 0;
-    let validHeightCount = 0;
-    const pagePositions = [];
-    let currentTop = 0;
-
-    canvases.forEach(canvas => {
-        const h = canvas.clientHeight;
-        if (h > 0) {
-            avgHeight += h;
-            validHeightCount++;
-        }
-        pagePositions.push({ top: currentTop, height: h });
-        currentTop += (h || 1100) + PAGE_MARGIN;
-    });
-
-    if (validHeightCount > 0) avgHeight = avgHeight / validHeightCount;
-    else avgHeight = 1100;
-
-    let allReady = true;
-
-    checkpoints.forEach(cp => {
-        let pageIdx = (cp.data.page || 1) - 1;
-        if (pageIdx >= pagePositions.length) {
-            // Allow theoretical positions if pages not rendered
-        }
-        if (pageIdx < 0) pageIdx = 0;
-
-        let pageTop = 0;
-        let pageHeight = avgHeight;
-
-        if (pageIdx < pagePositions.length) {
-            pageTop = pagePositions[pageIdx].top;
-            const h = pagePositions[pageIdx].height;
-            if (h > 0) pageHeight = h;
-        } else {
-            // Theoretical Calculation
-            if (pagePositions.length > 0) {
-                const lastPage = pagePositions[pagePositions.length - 1];
-                const lastPageH = lastPage.height > 0 ? lastPage.height : avgHeight;
-                const lastPageBottom = lastPage.top + lastPageH + PAGE_MARGIN;
-                const missingPages = pageIdx - pagePositions.length;
-                pageTop = lastPageBottom + (missingPages * (avgHeight + PAGE_MARGIN));
-            } else {
-                pageTop = pageIdx * (avgHeight + PAGE_MARGIN);
-            }
-        }
-
-        let relativeY = 0;
-        if (typeof cp.data.position.y === 'string' && cp.data.position.y.includes('%')) {
-            const pct = parseFloat(cp.data.position.y);
-            relativeY = (pct / 100) * pageHeight;
-        } else {
-            relativeY = parseFloat(cp.data.position.y) || (pageHeight - 50);
-        }
-
-        cp.baseTop = pageTop + relativeY;
-        cp.element.style.opacity = '1';
-
-        if (pageIdx < pagePositions.length && pagePositions[pageIdx].height === 0) allReady = false;
-    });
-
-    updateCheckpointPositions();
-
-    if (!allReady && retryCount < 20) {
-        setTimeout(() => calculateCheckpointBasePositions(retryCount + 1), 50);
-    }
-}
-
 function startDrag(e, el, checkpointData) {
     e.preventDefault();
     isDragging = true;
     draggedElement = el;
 
     const rect = el.getBoundingClientRect();
-    const overlayContainer = document.getElementById('grading-overlay-container');
+    // Use the parent (page-overlay) for relative calculations
+    const overlayContainer = el.parentElement;
     const containerRect = overlayContainer.getBoundingClientRect();
 
     const currentVisualLeft = rect.left - containerRect.left;
@@ -378,11 +361,12 @@ function startDrag(e, el, checkpointData) {
         el.style.left = `${newLeft}px`;
         el.style.top = `${newTop}px`;
 
-        const cpState = checkpoints.find(c => c.element === el);
-        if (cpState) {
-            cpState.baseTop = newTop;
-            checkpointData.position.x = `${(newLeft / containerRect.width) * 100}%`;
-        }
+        // Update data model with percentages (Save CENTER position)
+        const centerX = newLeft + el.offsetWidth / 2;
+        const centerY = newTop + el.offsetHeight / 2;
+
+        checkpointData.position.x = `${(centerX / containerRect.width) * 100}%`;
+        checkpointData.position.y = `${(centerY / containerRect.height) * 100}%`;
     };
 
     const stopDrag = () => {
@@ -390,7 +374,6 @@ function startDrag(e, el, checkpointData) {
         draggedElement = null;
         document.removeEventListener('mousemove', onDrag);
         document.removeEventListener('mouseup', stopDrag);
-        updateCheckpointPositions();
     };
 
     document.addEventListener('mousemove', onDrag);
@@ -398,27 +381,15 @@ function startDrag(e, el, checkpointData) {
 }
 
 function setupSmartRendering() {
-    const panel = document.getElementById('grading-panel');
-    if (!panel) return;
-    panel.addEventListener('scroll', () => {
-        requestAnimationFrame(updateCheckpointPositions);
-    });
+    // No longer needed
 }
 
 function updateCheckpointPositions() {
-    checkpoints.forEach((cp) => {
-        if (cp.element.style.opacity === '0') return;
-        cp.element.style.top = `${cp.baseTop}px`;
-    });
+    // No longer needed
 }
 
 function setupGlobalEventListeners() {
-    const panel = document.getElementById('grading-panel');
-    if (panel) {
-        new ResizeObserver(() => {
-            calculateCheckpointBasePositions(0);
-        }).observe(panel);
-    }
+    // No longer needed
 }
 
 // --- GLOBAL HANDLER FOR INPUTS ---
@@ -476,13 +447,8 @@ function scrollToCheckpoint(index) {
     if (!cp) return;
     const panel = document.getElementById('grading-panel');
 
-    let targetTop = cp.baseTop;
-    if (targetTop === 0 && cp.data.page > 1) {
-        calculateCheckpointBasePositions(20);
-        targetTop = cp.baseTop;
-    }
-
-    panel.scrollTo({ top: targetTop - 150, behavior: 'smooth' });
+    // Scroll to the element itself
+    cp.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function updateNavigationCircleStatus(qId, isScored) {
@@ -500,26 +466,29 @@ function updateTotalScoreDisplay() {
     if (!currentStudent) return;
 
     // 1. Calculate Max Points (for display)
+    // 1. Calculate Max Points (for display)
     const repo = window.currentRepository;
-    let maxTotal = 0;
 
+    // Find Question Data
     const findQuestion = (questions, id) => {
         for (const q of questions) {
             if (q.id === id) return q;
             if (q.subquestions) {
-                const sub = q.subquestions.find(s => s.id === id);
-                if (sub) return sub;
+                const subQ = q.subquestions.find(sub => sub.id === id);
+                if (subQ) return subQ;
             }
         }
         return null;
     };
 
-    const qData = findQuestion(repo.questions, currentQuestionId);
-    if (qData) {
-        if (qData.points) {
-            maxTotal = qData.points;
-        } else if (qData.subquestions) {
-            maxTotal = qData.subquestions.reduce((acc, curr) => acc + (curr.points || 0), 0);
+    const questionData = findQuestion(repo.questions, currentQuestionId);
+    let maxTotal = 0;
+
+    if (questionData) {
+        if (questionData.points) {
+            maxTotal = questionData.points;
+        } else if (questionData.subquestions) {
+            maxTotal = questionData.subquestions.reduce((acc, curr) => acc + (curr.points || 0), 0);
         }
     }
 

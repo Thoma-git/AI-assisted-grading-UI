@@ -1593,7 +1593,7 @@
                                 data = savedRepo;
                             } else {
                                 console.log(`Fetching repository '${repoId}' from file.`);
-                                const url = `data/${repoId}.json`;
+                                const url = `data/${repoId}.json?t=${new Date().getTime()}`;
                                 const response = await fetch(url);
                                 if (!response.ok) {
                                     throw new Error(`Could not load repository: ${response.statusText}`);
@@ -1918,9 +1918,74 @@
                         });
                     }
 
-                    // Event listeners for grading parameters (already existing, just ensure they work with new initial state)
-                    document.getElementById('student-score').addEventListener('input', (e) => e.target.nextElementSibling.textContent = `${e.target.value}%`);
-                    document.getElementById('ai-confidence').addEventListener('input', (e) => { e.target.nextElementSibling.textContent = `${e.target.value}%`; localStorage.setItem('aiConfidenceThreshold', e.target.value); });
+                    // Event listeners for grading parameters
+                    const scoreSlider = document.getElementById('student-score');
+                    const confidenceSlider = document.getElementById('ai-confidence');
+
+                    const updateGradingOverview = () => {
+                        if (!window.currentRepository) return;
+
+                        const scoreThreshold = parseInt(scoreSlider.value, 10);
+                        const aiThreshold = parseInt(confidenceSlider.value, 10);
+
+                        // Update Local Storage
+                        localStorage.setItem('studentScoreThreshold', scoreThreshold);
+                        localStorage.setItem('aiConfidenceThreshold', aiThreshold);
+
+                        // Recalculate Stats
+                        const stats = calculateGradingStats(window.currentRepository, {
+                            aiConfidenceThreshold: aiThreshold,
+                            studentScoreThreshold: scoreThreshold
+                        });
+
+                        // Re-render Charts
+                        if (stats) {
+                            renderGradingProgress(stats.globalStats);
+                            renderQuestionBreakdown(stats.questionStats);
+                        }
+                    };
+
+                    scoreSlider.addEventListener('input', (e) => {
+                        e.target.nextElementSibling.textContent = `${e.target.value}%`;
+                        updateGradingOverview();
+                    });
+
+                    confidenceSlider.addEventListener('input', (e) => {
+                        e.target.nextElementSibling.textContent = `${e.target.value}%`;
+                        updateGradingOverview();
+                    });
+
+                    // Listen for page show to reload data (e.g. when returning from grading.html)
+                    window.addEventListener('pageshow', (event) => {
+                        if (event.persisted || sessionStorage.getItem(REPO_STORAGE_KEY)) {
+                            const savedRepoData = sessionStorage.getItem(REPO_STORAGE_KEY);
+                            if (savedRepoData) {
+                                try {
+                                    const data = JSON.parse(savedRepoData);
+                                    // Only reload if the ID matches or if we want to force a refresh
+                                    if (window.currentRepository && window.currentRepository.id === data.id) {
+                                        window.currentRepository = data;
+                                        // Update sliders from local storage if they exist, else defaults
+                                        const savedScore = localStorage.getItem('studentScoreThreshold');
+                                        const savedConf = localStorage.getItem('aiConfidenceThreshold');
+                                        if (savedScore) scoreSlider.value = savedScore;
+                                        if (savedConf) confidenceSlider.value = savedConf;
+
+                                        // Update text displays
+                                        scoreSlider.nextElementSibling.textContent = `${scoreSlider.value}%`;
+                                        confidenceSlider.nextElementSibling.textContent = `${confidenceSlider.value}%`;
+
+                                        updateGradingOverview();
+                                    } else {
+                                        // Full reload if repo changed
+                                        loadRepositoryData(data.id);
+                                    }
+                                } catch (e) {
+                                    console.error("Failed to reload repo data on pageshow", e);
+                                }
+                            }
+                        }
+                    });
 
                     async function renderExamTemplate(pdfUrl) {
                         const pdfjsLib = window.pdfjsLib;

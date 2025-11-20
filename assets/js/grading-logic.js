@@ -1,4 +1,26 @@
 /**
+ * Determines the category for a grade based on thresholds and status.
+ * 
+ * @param {number} confidence - AI confidence (0-100).
+ * @param {number} score - AI suggested score.
+ * @param {number} maxPoints - Maximum points for the question.
+ * @param {number} manualStatus - Manual grading status (0=None, 1=Once, 2=Twice).
+ * @param {Object} thresholds - { aiConfidenceThreshold, studentScoreThreshold }.
+ * @returns {string} - Category key ('aiHigh', 'aiLow', 'lowScore', 'gradedOnce', 'graded2Plus').
+ */
+export function determineCategory(confidence, score, maxPoints, manualStatus, thresholds) {
+    if (manualStatus >= 2) return 'graded2Plus';
+    if (manualStatus === 1) return 'gradedOnce';
+
+    const { aiConfidenceThreshold, studentScoreThreshold } = thresholds;
+    const scorePercentage = maxPoints > 0 ? (score / maxPoints) * 100 : 0;
+
+    if (confidence < aiConfidenceThreshold) return 'aiLow';
+    if (scorePercentage < studentScoreThreshold) return 'lowScore';
+    return 'aiHigh';
+}
+
+/**
  * Calculates grading statistics for the entire repository based on current parameters.
  * 
  * @param {Object} repository - The full exam repository object.
@@ -9,8 +31,6 @@ export function calculateGradingStats(repository, parameters) {
     if (!repository || !repository.questions || !repository.studentSubmissions) {
         return null;
     }
-
-    const { aiConfidenceThreshold, studentScoreThreshold } = parameters;
 
     // Initialize global counters
     let globalStats = {
@@ -23,17 +43,6 @@ export function calculateGradingStats(repository, parameters) {
     };
 
     const questionStats = {};
-
-    // Helper to get max points for a question/subquestion
-    const getMaxPoints = (qId, subId) => {
-        const q = repository.questions.find(q => q.id === qId);
-        if (!q) return 0;
-        if (subId) {
-            const sq = q.subquestions ? q.subquestions.find(s => s.id === subId) : null;
-            return sq ? sq.points : 0;
-        }
-        return q.points || 0;
-    };
 
     // Helper to find a student's grade for a specific question item
     const findGrade = (studentId, questionId) => {
@@ -73,29 +82,11 @@ export function calculateGradingStats(repository, parameters) {
                 let category = 'aiLow'; // Default fallback
 
                 if (grade) {
-                    // Check for Manual Grading first
-                    const manualCount = grade.gradingHistory ? grade.gradingHistory.length : (grade.manualScore !== undefined ? 1 : 0);
+                    const manualStatus = grade.manualStatus || 0;
+                    const confidence = grade.confidence || 0;
+                    const score = grade.aiSuggestedScore || 0;
 
-                    if (manualCount >= 2) {
-                        category = 'graded2Plus';
-                    } else if (manualCount === 1) {
-                        category = 'gradedOnce';
-                    } else {
-                        // AI Grading Logic
-                        const confidence = grade.confidence || 0;
-                        const score = grade.aiSuggestedScore || 0;
-                        const scorePercentage = maxPoints > 0 ? (score / maxPoints) * 100 : 0;
-
-                        if (confidence >= aiConfidenceThreshold) {
-                            if (scorePercentage < studentScoreThreshold) {
-                                category = 'lowScore';
-                            } else {
-                                category = 'aiHigh';
-                            }
-                        } else {
-                            category = 'aiLow';
-                        }
-                    }
+                    category = determineCategory(confidence, score, maxPoints, manualStatus, parameters);
                 }
 
                 // Update Local Stats (Aggregated for the Question)
@@ -122,3 +113,4 @@ export function calculateGradingStats(repository, parameters) {
 
     return { globalStats, questionStats };
 }
+

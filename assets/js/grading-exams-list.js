@@ -1,3 +1,5 @@
+import { determineCategory } from './grading-logic.js';
+
 /**
  * Renders the Student Exams List and populates filters.
  * @param {Object} repository - The exam repository.
@@ -118,20 +120,31 @@ export function renderStudentExamsList(repository, onRenderComplete) {
     const selectedStudent = studentFilterSelect.value;
 
     // Get Thresholds
-    const aiThreshold = parseInt(localStorage.getItem('aiConfidenceThreshold') || '80', 10);
-    const scoreThreshold = parseInt(localStorage.getItem('studentScoreThreshold') || '50', 10);
-
     // Helper to determine category (0-4)
+    // Mapped to match determineCategory return values:
+    // 'graded2Plus' -> 4
+    // 'gradedOnce' -> 3
+    // 'aiHigh' -> 2
+    // 'lowScore' -> 1
+    // 'aiLow' -> 0
+    const getCategoryCode = (catString) => {
+        switch (catString) {
+            case 'graded2Plus': return 4;
+            case 'gradedOnce': return 3;
+            case 'aiHigh': return 2;
+            case 'lowScore': return 1;
+            case 'aiLow': return 0;
+            default: return 0;
+        }
+    };
+
     const getCategory = (confidence, score, maxPoints, manualStatus) => {
-        if (manualStatus >= 2) return 4; // Graded Twice (Dark Green)
-        if (manualStatus === 1) return 3; // Graded Once (Light Green)
+        // Read thresholds dynamically from localStorage to ensure they are up-to-date
+        const aiThreshold = parseInt(localStorage.getItem('aiConfidenceThreshold') || '80', 10);
+        const scoreThreshold = parseInt(localStorage.getItem('studentScoreThreshold') || '50', 10);
 
-        // Auto Categories
-        const scorePercent = maxPoints > 0 ? (score / maxPoints) * 100 : 0;
-
-        if (confidence < aiThreshold) return 0; // Low Confidence (Orange)
-        if (scorePercent < scoreThreshold) return 1; // High Conf / Low Score (Red)
-        return 2; // High Confidence (Green)
+        const catString = determineCategory(confidence, score, maxPoints, manualStatus, { aiConfidenceThreshold: aiThreshold, studentScoreThreshold: scoreThreshold });
+        return getCategoryCode(catString);
     };
 
     let allItems = [];
@@ -257,38 +270,59 @@ function createExamListItem(taskName, confidence, category, container, studentNa
     // Category Styles
     let statusClass, statusText, badgeClass;
 
+    // Legend Mapping from index.html:
+    // AI conf >= Threshold: #3B82F6 (Blue 500) -> bg-blue-100 text-blue-700
+    // AI conf < Threshold: #60A5FA (Blue 400) -> bg-blue-50 text-blue-600
+    // Low AI Score (High Conf): #EF4444 (Red 500) -> bg-red-100 text-red-700
+    // Graded Once: #86EFAC (Green 300) -> bg-green-100 text-green-700
+    // Graded 2+: #22C55E (Green 500) -> bg-green-200 text-green-800
+
     switch (category) {
-        case 4: // Graded Twice
-            statusClass = 'bg-green-200 dark:bg-green-900/40 text-green-800 dark:text-green-300';
+        case 4: // Graded Twice (#22C55E)
+            statusClass = 'bg-[#22C55E]/20 text-[#14532d] dark:text-[#4ade80]';
             statusText = 'Graded (2nd Pass)';
-            badgeClass = 'bg-green-200 dark:bg-green-900/40 text-green-800 dark:text-green-300';
+            badgeClass = 'bg-[#22C55E]/20 text-[#14532d] dark:text-[#4ade80]';
             break;
-        case 3: // Graded Once
-            statusClass = 'bg-success/10 text-success';
+        case 3: // Graded Once (#86EFAC)
+            statusClass = 'bg-[#86EFAC]/30 text-[#15803d] dark:text-[#86EFAC]';
             statusText = 'Graded (1st Pass)';
-            badgeClass = 'bg-success/10 text-success';
+            badgeClass = 'bg-[#86EFAC]/30 text-[#15803d] dark:text-[#86EFAC]';
             break;
-        case 2: // High Confidence (Green)
-            statusClass = 'bg-ai-high-confidence/10 text-ai-high-confidence';
+        case 2: // High Confidence (#3B82F6 - Blue 500)
+            // User requested "some kind of green" but legend is Blue. 
+            // Using the exact legend color.
+            statusClass = 'bg-[#3B82F6]/10 text-[#1d4ed8] dark:text-[#60a5fa]';
             statusText = 'High Confidence';
-            badgeClass = 'bg-ai-high-confidence/20 text-ai-high-confidence';
+            badgeClass = 'bg-[#3B82F6]/10 text-[#1d4ed8] dark:text-[#60a5fa]';
             break;
-        case 1: // High Conf / Low Score (Red)
-            statusClass = 'bg-red-200 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+        case 1: // High Conf / Low Score (#EF4444 - Red 500)
+            statusClass = 'bg-[#EF4444]/20 text-[#b91c1c] dark:text-[#f87171]';
             statusText = 'Review Needed (Low Score)';
-            badgeClass = 'bg-red-200 dark:bg-red-900/30 text-red-700 dark:text-red-400';
+            badgeClass = 'bg-[#EF4444]/20 text-[#b91c1c] dark:text-[#f87171]';
             break;
-        case 0: // Low Confidence (Orange)
-        default:
-            statusClass = 'bg-ai-low-confidence/10 text-ai-low-confidence';
+        case 0: // Low Confidence (#60A5FA - Blue 400)
+            statusClass = 'bg-[#60A5FA]/10 text-[#2563eb] dark:text-[#93c5fd]';
             statusText = 'Low Confidence';
-            badgeClass = 'bg-ai-low-confidence/20 text-ai-low-confidence';
+            badgeClass = 'bg-[#60A5FA]/10 text-[#2563eb] dark:text-[#93c5fd]';
+            break;
+        default:
+            statusClass = 'bg-gray-100 text-gray-600';
+            statusText = 'Unknown';
+            badgeClass = 'bg-gray-100 text-gray-600';
             break;
     }
 
     const item = document.createElement('div');
     item.className = `completion-checklist-item relative py-0 px-0 rounded-lg transition duration-200 font-medium hover:bg-gray-100 dark:hover:bg-gray-700/50 hover:text-primary dark:hover:text-primary-light text-gray-500 dark:text-gray-400 cursor-pointer`;
     item.dataset.status = category; // Store category for potential sorting
+
+    // Check if this item is the currently selected one
+    const currentExamTitle = document.getElementById('exam-title');
+    const isSelected = currentExamTitle && currentExamTitle.textContent.includes(studentName) && currentExamTitle.textContent.includes(questionId);
+
+    if (isSelected) {
+        item.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'border-primary', 'border');
+    }
 
     // Click Handler to Load Exam
     item.addEventListener('click', () => {

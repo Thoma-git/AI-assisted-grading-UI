@@ -109,9 +109,9 @@
                         </button>
                     </div>
                 </div>
-                <div class="flex-1 flex items-center justify-center bg-gray-100 dark:bg-gray-900 rounded-b-xl"
+                <div class="flex-1 overflow-y-auto bg-gray-100 dark:bg-gray-900 rounded-b-xl relative custom-scrollbar"
                     id="grading-panel">
-                    <div class="text-center p-8">
+                    <div class="h-full flex flex-col items-center justify-center text-center p-8">
                         <span
                             class="material-symbols-outlined text-5xl text-gray-400 dark:text-gray-500 mb-4">school</span>
                         <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200">Select an Exam to Begin</h3>
@@ -295,10 +295,12 @@
         import { initializeTaWorkload } from './assets/js/grading-workload.js';
         import { renderStudentExamsList, updateManualGradingStatus, populateFilters, populateRubrics } from './assets/js/grading-exams-list.js';
         import { initializeGradingView, loadStudentExam } from './assets/js/grading-view.js';
+        import { initializePdfViewer } from './assets/js/pdf-render.js';
 
         // Expose functions to window for global access (needed for inline event handlers if any)
         window.loadStudentExam = loadStudentExam;
         window.updateManualGradingStatus = updateManualGradingStatus;
+        window.initializePdfViewer = initializePdfViewer;
 
         // Global DOM Elements & State
         let svgContainer, mainPanel, gradingPanel, rightPanel;
@@ -309,6 +311,8 @@
         function logDebug(msg) {
             console.log(`[GradingPage] ${msg}`);
         }
+
+        let isShowingArchivedGrading = false;
 
         function initGradingPage() {
             try {
@@ -350,7 +354,6 @@
 
                     // 3. Render the Main List
                     renderStudentExamsList(window.currentRepository, () => {
-                        setupChecklistClickHandlers();
                         setupWorkloadClickHandlers();
                     });
 
@@ -361,6 +364,7 @@
                     setupFinalizeButton();
                     initializeDraggableCheckpoints();
                     initializeScrollToRubricButtons();
+                    initializeContextMenu();
 
                     // Responsive Observers
                     new ResizeObserver(() => {
@@ -420,7 +424,7 @@
             const container = document.getElementById('rubric-viewer-container');
             if (!container) return;
 
-            if (container.clientWidth === 0) return; // Don't render if not visible
+            if (container.clientWidth === 0) return false; // Don't render if not visible
             const pdfjsLib = window.pdfjsLib;
             if (!pdfjsLib) { console.error("PDF.js library not loaded."); return; }
             pdfjsLib.GlobalWorkerOptions.workerSrc = window.pdfjsWorker;
@@ -475,6 +479,7 @@
                         container.appendChild(canvas);
                     }
                 }
+                return true;
             } catch (error) {
                 console.error('Error rendering rubric PDF:', error);
                 container.innerHTML = `<div class="p-4 text-center text-red-500">Failed to load rubric PDF.</div>`;
@@ -538,111 +543,7 @@
             }
         };
 
-        // Global counter to track the active render task
-        let currentRenderId = 0;
 
-        window.initializePdfViewer = async function (pdfUrl, pageToShow) {
-            const pdfPageContainer = document.getElementById('pdf-page-container');
-            const gradingPanel = document.getElementById('grading-panel');
-            if (!pdfPageContainer) return;
-
-            // 1. Update Globals so ResizeObserver knows what to re-render
-            if (pdfUrl) window.currentPdfUrl = pdfUrl;
-            if (pageToShow) window.currentPageNumber = pageToShow;
-
-            // 2. Concurrency Control: Create a unique ID for THIS render attempt
-            const myRenderId = ++currentRenderId;
-
-            if (!pdfUrl) pdfUrl = 'assets/exams/dummy-exam.pdf';
-
-            const pdfjsLib = window.pdfjsLib;
-            if (!pdfjsLib) {
-                console.error("PDF.js library not loaded.");
-                return;
-            }
-            pdfjsLib.GlobalWorkerOptions.workerSrc = window.pdfjsWorker;
-
-            try {
-                const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
-
-                // STOP if a newer render has started since we began loading
-                if (myRenderId !== currentRenderId) return;
-
-                const numPages = pdf.numPages;
-                const pagesToRender = Array.from({ length: numPages }, (_, i) => i + 1);
-
-                // Clear OLD canvases now that we are ready to render
-                pdfPageContainer.querySelectorAll('canvas').forEach(c => c.remove());
-
-                for (const pageNum of pagesToRender) {
-                    // STOP immediately if a newer render has started
-                    if (myRenderId !== currentRenderId) return;
-
-                    // Check container again in case DOM changed
-                    const currentPdfContainer = document.getElementById('pdf-page-container');
-                    const currentOverlay = document.getElementById('grading-overlay-container');
-                    if (!currentPdfContainer || !currentOverlay) return;
-
-                    const page = await pdf.getPage(pageNum);
-
-                    // Viewport math
-                    const containerStyle = window.getComputedStyle(currentPdfContainer);
-                    const desiredWidth = currentPdfContainer.clientWidth - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight) - 10;
-                    const viewport = page.getViewport({ scale: 1 });
-                    const scale = desiredWidth / viewport.width;
-                    const scaledViewport = page.getViewport({ scale });
-
-                    const canvas = document.createElement('canvas');
-                    canvas.className = 'block';
-                    canvas.setAttribute('data-page-number', pageNum);
-
-                    const context = canvas.getContext('2d');
-                    canvas.height = scaledViewport.height;
-                    canvas.width = scaledViewport.width;
-                    canvas.style.boxShadow = '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)';
-                    canvas.style.marginBottom = '1rem';
-
-                    const renderContext = {
-                        canvasContext: context,
-                        viewport: scaledViewport
-                    };
-
-                    await page.render(renderContext).promise;
-
-                    // STOP before appending if a newer render took over
-                    if (myRenderId !== currentRenderId) return;
-
-                    if (currentPdfContainer.contains(currentOverlay)) {
-                        currentPdfContainer.insertBefore(canvas, currentOverlay);
-                    } else {
-                        currentPdfContainer.appendChild(canvas);
-                    }
-                }
-
-                // Final check before UI updates
-                if (myRenderId !== currentRenderId) return;
-
-                setupArrows();
-
-                // Scroll Logic
-                if (pageToShow && gradingPanel) {
-                    const targetPageNum = parseInt(pageToShow);
-                    const targetCanvas = pdfPageContainer.querySelector(`canvas[data-page-number="${targetPageNum}"]`);
-
-                    if (targetCanvas) {
-                        setTimeout(() => {
-                            gradingPanel.scrollTo({
-                                top: targetCanvas.offsetTop - 20,
-                                behavior: 'smooth'
-                            });
-                        }, 100);
-                    }
-                }
-
-            } catch (error) {
-                console.error('Error rendering PDF:', error);
-            }
-        }
         // Ensure containers exist
 
 
@@ -931,9 +832,9 @@
         // Template for the PDF viewer and grading controls.
         // This will be used to restore the view after it's been replaced by a placeholder.
         const examViewTemplate = `
-            <div class="flex-1 overflow-y-auto relative bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-b-xl p-4" id="grading-panel">
+            <div class="flex-1 overflow-y-auto relative bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 rounded-b-xl p-4 custom-scrollbar" id="grading-panel">
                 <div id="pdf-viewer-container">
-                    <div id="pdf-page-container" class="relative">
+                    <div id="pdf-page-container" class="relative w-full flex flex-col items-center pb-32">
                         <div id="grading-overlay-container" class="absolute inset-0 z-10 pointer-events-none p-4">
                             </div>
                     </div>
@@ -1227,7 +1128,6 @@
                     questionSelect.value = "";
                 }
                 renderStudentExamsList(window.currentRepository, () => {
-                    setupChecklistClickHandlers();
                     setupWorkloadClickHandlers();
                 });
             });
@@ -1238,7 +1138,7 @@
 
         // Attach event listeners to workload buttons
         function setupWorkloadClickHandlers() {
-            workloadButtons = document.querySelectorAll('.workload-button');
+            const workloadButtons = document.querySelectorAll('.workload-button');
             workloadButtons.forEach(button => {
                 button.addEventListener('click', () => {
                     const questionId = button.dataset.questionId;
@@ -1249,378 +1149,257 @@
                         questionSelect.value = questionId;
                     }
                     renderStudentExamsList(window.currentRepository, () => {
-                        setupChecklistClickHandlers();
-                        setupWorkloadClickHandlers();
+                        // No longer need to re-setup workload handlers here, as they are set up once after initial render
                     });
                 });
             });
         }
 
         function initializeScrollToRubricButtons() {
-            document.querySelectorAll('.scroll-to-rubric-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent any parent click handlers
-
-                    const sourceCheckpoint = button.closest('.grading-checkpoint-group');
-                    const isReferenceTabActive = !document.getElementById('reference-content').classList.contains('hidden');
-
-                    if (!sourceCheckpoint || !sourceCheckpoint.id) return; // e.g., 'source1'
-
-                    let targetId;
-                    let targetPanel;
-
-                    if (isReferenceTabActive) {
-                        targetId = sourceCheckpoint.id.replace('source', 'ref-target');
-                        targetPanel = document.getElementById('reference-content');
-                    } else {
-                        targetId = sourceCheckpoint.id.replace('source', 'target');
-                        targetPanel = document.getElementById('rubric-content');
-                    }
-
-                    const targetElement = document.getElementById(targetId);
-
-                    if (targetElement && targetPanel) {
-                        // Scroll the correct panel to the target element
-                        targetPanel.scrollTo({
-                            top: targetElement.offsetTop - targetPanel.offsetTop - 20, // 20px offset for padding
-                            behavior: 'smooth'
-                        });
-
-                        // Add a temporary highlight to the target
-                        targetElement.classList.add('highlight-checkpoint');
-                        setTimeout(() => targetElement.classList.remove('highlight-checkpoint'), 2000);
-                    }
-                });
-
-                // Dynamically update the hover title
-                button.addEventListener('mouseenter', () => {
-                    const isReferenceTabActive = !document.getElementById('reference-content').classList.contains('hidden');
-                    if (isReferenceTabActive) {
-                        button.title = 'Scroll to relevant reference';
-                    } else {
-                        button.title = 'Scroll to rubric criterion';
-                    }
-                });
-            });
-        }
-
-        function setupChecklistClickHandlers() {
-            pendingTasks = document.querySelectorAll('.completion-checklist-item');
-            document.querySelectorAll('.completion-checklist-item').forEach(task => {
-
-                task.addEventListener('click', () => {
-                    // Remove 'current' from previously selected task
-                    const currentTask = document.querySelector('.completion-checklist-item.current');
-                    if (currentTask) {
-                        currentTask.classList.remove('current', 'border', 'border-primary', 'text-gray-900', 'dark:text-white');
-                        // Also revert the status text color
-                        const statusDiv = currentTask.querySelector('.py-1.px-3.text-sm');
-                        if (statusDiv) {
-                            statusDiv.classList.remove('bg-primary/10', 'text-primary-light');
-                            // Re-apply original status styles based on its data-status attribute.
-                            const status = currentTask.dataset.status;
-                            // New logic: check if parent task should be un-completed
-                            const [studentName, questionId] = currentTask.querySelector('.flex.items-center.gap-2').textContent.trim().split(' - ');
-                            const parentQuestion = window.currentRepository?.questions.find(q => q.subquestions?.some(sq => sq.id === questionId));
-                            if (parentQuestion) {
-                                const parentTaskName = `${studentName} - ${parentQuestion.id}`;
-                                const parentTaskElement = Array.from(document.querySelectorAll('.completion-checklist-item')).find(el => el.querySelector('.flex.items-center.gap-2').textContent.trim() === parentTaskName);
-                                if (parentTaskElement && parentTaskElement.dataset.status === 'completed') {
-                                    parentTaskElement.dataset.status = 'in-progress'; // Or 'not-started'
-                                    const parentStatusDiv = parentTaskElement.querySelector('.py-1.px-3.text-sm');
-                                    parentStatusDiv.textContent = 'In Progress';
-                                    parentStatusDiv.className = 'py-1 px-3 text-sm rounded-b-md bg-primary/10 text-primary-light';
-
-                                    // Also remove from session storage
-                                    const completedTasks = new Set(JSON.parse(sessionStorage.getItem(COMPLETED_TASKS_KEY) || '[]'));
-                                    if (completedTasks.has(parentTaskName)) {
-                                        completedTasks.delete(parentTaskName);
-                                        sessionStorage.setItem(COMPLETED_TASKS_KEY, JSON.stringify(Array.from(completedTasks)));
-                                    }
-                                }
-                            }
-                            if (status === 'not-started') statusDiv.classList.add('bg-gray-700/20', 'text-text-muted-dark');
-                            else if (status === 'completed') statusDiv.classList.add('bg-success/10', 'text-success-light');
-                            else if (status === 'in-progress') statusDiv.classList.add('bg-primary/10', 'text-primary-light');
-                        }
-                        currentTask.classList.add('hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'dark:hover:text-primary-light', 'text-gray-500', 'dark:text-gray-400');
-                    }
-
-                    // Add 'current' to clicked task
-                    task.classList.add('current', 'border', 'border-primary', 'text-gray-900', 'dark:text-white');
-                    task.classList.remove('hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'dark:hover:text-primary-light', 'text-gray-500', 'dark:text-gray-400');
-
-                    const taskText = task.querySelector('.flex.items-center.gap-2').textContent.trim(); // e.g., "Student A - Q3A"
-                    const [studentName, questionId] = taskText.split(' - ');
-
-                    const repo = window.currentRepository;
-                    const studentSubmission = repo?.studentSubmissions.find(s => s.name === studentName);
-                    const pdfUrl = studentSubmission?.url;
-                    let questionData = null;
-
-                    let pageNumber = null;
-                    if (repo && questionId) {
-                        const findQuestion = (questions, id) => {
-                            for (const question of questions) {
-                                // Check if the parent question ID matches
-                                if (question.id === id) return question;
-                                // If not, check if any subquestion ID matches
-                                if (question.subquestions) {
-                                    const subquestion = question.subquestions.find(sub => sub.id === id);
-                                    if (subquestion) return subquestion;
-                                }
-                            }
-                            return null;
-                        };
-                        questionData = findQuestion(repo.questions, questionId); // This will find the subquestion object
-
-                        // If it's a subquestion, find its parent to get the page number.
-                        const parentQuestion = repo.questions.find(q => q.subquestions?.some(sq => sq.id === questionId));
-                        const questionForPage = parentQuestion || questionData; // Use parent if it exists, otherwise the question itself
-
-                        if (questionForPage?.pages) {
-                            pageNumber = String(questionForPage.pages).split('-')[0].trim();
-                        }
-                    }
-
-                    if (pdfUrl && pdfUrl !== 'assets/exams/no-exam-uploaded.pdf') {
-                        // Find the header and the main panel container
-                        const header = examViewContainer.querySelector('#exam-view-header');
-
-                        // Clear the container but keep the header
-                        while (examViewContainer.children.length > 1) {
-                            examViewContainer.removeChild(examViewContainer.lastChild);
-                        }
-
-                        // Append the PDF viewer structure from the template
-                        const templateEl = document.createElement('div');
-                        templateEl.innerHTML = examViewTemplate.trim();
-                        Array.from(templateEl.children).forEach(child => examViewContainer.appendChild(child));
-
-                        // --- FIX: Reset Scroll Position Immediately ---
-                        const gradingPanel = document.getElementById('grading-panel');
-                        if (gradingPanel) {
-                            gradingPanel.scrollTop = 0;
-                        }
-                        // ---------------------------------------------
-
-                        // Re-initialize all JS functionalities for the restored view
-                        renderGradingCheckpoints(repo, questionId, studentSubmission);
-                        gradingCheckpointsContainer = document.getElementById('grading-checkpoints');
-                        initializeCheckpoints();
-                        setupFinalizeButton();
-                        setupPointsInputs();
-                        updateTotalGrade();
-                        initializeCommentWidgets();
-                        initializeDraggableCheckpoints();
-                        initializeScrollToRubricButtons();
-                        // Render the specific student PDF and page
-                        document.getElementById('exam-title').textContent = `Student Exam: ${studentName} (${questionId})`;
-                        const maxGradeSpan = document.getElementById('max-total-grade');
-                        const totalForSpan = document.querySelector('.sticky .flex.items-center.gap-1 span');
-                        if (maxGradeSpan && questionData) {
-                            let totalPoints = 0;
-                            if (questionData.points) {
-                                totalPoints = questionData.points;
-                            } else if (questionData.subquestions) {
-                                totalPoints = questionData.subquestions.reduce((sum, sq) => sum + (sq.points || 0), 0);
-                            }
-                            maxGradeSpan.textContent = totalPoints;
-                            if (totalForSpan) totalForSpan.textContent = `Total for ${questionId.replace('Q', 'Question ')}:`;
-                        }
-                        window.initializePdfViewer(pdfUrl, pageNumber);
-                        window.initializeRubricViewer();
-                    } else { // This handles the case where no PDF is associated with the submission
-                        // Show "No exam uploaded" message
-                        examViewContainer.innerHTML = `<div class="p-4 border-b border-border-dark flex items-center gap-2"><span class="material-symbols-outlined text-primary">person</span><h2 class="font-display font-bold text-lg text-text-dark">Student Exam: ${taskText}</h2></div><div class="flex-1 flex items-center justify-center bg-gray-200 dark:bg-gray-900 rounded-b-xl"><div class="text-center p-8"><span class="material-symbols-outlined text-5xl text-text-muted-dark mb-4">draft</span><h3 class="text-xl font-bold text-text-dark">No Exam Uploaded</h3><p class="text-text-muted-dark mt-2">There is no exam submission available for this item yet.</p></div></div>`;
-                    }
-                });
-            });
-        }
-        // --- Tab Switching Logic ---
-        function renderGradingCheckpoints(repo, questionId, studentSubmission) {
-            // DEBUG: If you don't see this in the console, the old code is still running!
-            console.log("Applying HORIZONTAL UI updates...");
-
-            const overlayContainer = document.getElementById('grading-overlay-container');
-            if (!overlayContainer) return;
-
-            overlayContainer.innerHTML = '';
-
-            const rubricOverlay = document.getElementById('rubric-overlay-container');
-            if (rubricOverlay) rubricOverlay.innerHTML = '';
-
-            // --- 1. Find Question Data ---
-            const findQuestion = (questions, id) => {
-                for (const q of questions) {
-                    if (q.id === id) return q;
-                    if (q.subquestions) {
-                        const subQ = q.subquestions.find(sub => sub.id === id);
-                        if (subQ) return subQ;
-                    }
-                }
-                return null;
+            const rubricPageMapping = {
+                'Q1': 2,
+                'Q2': 3,
+                'Q3': 4,
+                'Q3A': 4,
+                'Q3B': 4,
+                'Q4': 5,
+                'Q4A': 5,
+                'Q4B': 5
             };
-            const questionData = findQuestion(repo.questions, questionId);
-            let checkpoints = repo.gradingCheckpoints?.filter(cp => cp.questionId === questionId) || [];
 
-            // Fallback search for checkpoints
-            if (checkpoints.length === 0) {
-                const currentQuestion = repo.questions.find(q => q.id === questionId);
-                if (currentQuestion?.subquestions) {
-                    const sub = currentQuestion.subquestions.find(s => repo.gradingCheckpoints.some(cp => cp.questionId === s.id));
-                    if (sub) checkpoints = repo.gradingCheckpoints.filter(cp => cp.questionId === sub.id);
-                } else {
-                    const parent = repo.questions.find(q => q.subquestions?.some(sub => sub.id === questionId));
-                    if (parent) {
-                        const sibling = parent.subquestions.find(sub => repo.gradingCheckpoints.some(cp => cp.questionId === sub.id));
-                        if (sibling) checkpoints = repo.gradingCheckpoints.filter(cp => cp.questionId === sibling.id);
-                    }
+            // Use Event Delegation for dynamically created buttons
+            document.addEventListener('click', async (e) => {
+                const button = e.target.closest('.scroll-to-rubric-btn');
+                if (!button) return;
+
+                console.log("[RubricScroll] Button clicked");
+                e.stopPropagation(); // Prevent any parent click handlers
+
+                const sourceCheckpoint = button.closest('.grading-checkpoint-group');
+
+                const titleEl = document.getElementById('exam-title');
+                let questionId = null;
+                if (titleEl) {
+                    const match = titleEl.textContent.match(/\(([^)]+)\)/);
+                    if (match) questionId = match[1];
                 }
-            }
+                console.log(`[RubricScroll] Extracted Question ID: ${questionId}`);
 
-            // --- 2. Render Each Checkpoint (Horizontal Bar Style) ---
-            checkpoints.forEach((cp, index) => {
-                const checkpointWrapper = document.createElement('div');
-                const checkpointId = `source${index + 1}`;
-
-                let maxPoints = questionData?.points || 0;
-                if (questionData?.subquestions?.length > 0) {
-                    maxPoints = questionData.subquestions.reduce((sum, sq) => sum + (sq.points || 0), 0);
+                if (!questionId) {
+                    console.warn("[RubricScroll] Could not determine Question ID for rubric scrolling.");
+                    return;
                 }
 
-                const gradeEntry = studentSubmission?.grades?.find(g => g.questionId === questionId) || {};
-                const aiConfidence = gradeEntry.confidence || 0;
-                const aiSuggestedPoints = gradeEntry.aiSuggestedScore || 0;
-                const aiComment = gradeEntry.comment || '';
+                const targetPageNum = rubricPageMapping[questionId];
+                console.log(`[RubricScroll] Target Page: ${targetPageNum}`);
 
-                // Confidence Colors (Inline styles to bypass CSS issues)
-                let pillBg = 'rgba(239, 68, 68, 0.15)'; // Red
-                let pillText = '#f87171';
-                if (aiConfidence > 80) {
-                    pillBg = 'rgba(16, 185, 129, 0.15)';
-                    pillText = '#34d399';
-                } // Green
-                else if (aiConfidence > 50) {
-                    pillBg = 'rgba(234, 179, 8, 0.15)';
-                    pillText = '#facc15';
-                } // Yellow
-
-                checkpointWrapper.className = 'absolute inset-x-0 bottom-0 h-full flex flex-col justify-end items-center pointer-events-none';
-
-                const checkpointEl = document.createElement('div');
-                checkpointEl.id = checkpointId;
-
-                // CONTAINER STYLE: Fixed height, dark bg, flex row
-                checkpointEl.className = 'group grading-checkpoint-group pointer-events-auto mb-6 transition-transform shadow-2xl';
-                checkpointEl.style.cssText = `
-            width: 500px; 
-            max-width: 95%; 
-            background-color: #1e293b; 
-            border: 1px solid #334155; 
-            border-radius: 12px;
-            color: white;
-            display: flex;
-            align-items: center;
-            padding: 8px 16px;
-            height: 54px; /* Forces the bar shape */
-        `;
-                checkpointEl.dataset.maxPoints = maxPoints;
-
-                // HTML CONTENT: Single Row Flexbox
-                checkpointEl.innerHTML = `
-            <div class="flex items-center gap-3 pr-4 border-r border-gray-700 cursor-move grading-drag-handle">
-                <span class="material-symbols-outlined text-gray-500 text-sm">drag_indicator</span>
-                <span class="font-bold text-sm text-gray-100 whitespace-nowrap">CP ${index + 1}</span>
-            </div>
-
-            <div class="flex-1 flex items-center gap-3 px-4">
-                <span style="background: ${pillBg}; color: ${pillText}; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;">
-                    ${aiConfidence}%
-                </span>
-                
-                <div class="flex flex-col leading-none">
-                    <span class="text-[10px] text-gray-400 uppercase">AI Sugg.</span>
-                    <span class="text-xs font-medium text-gray-200">${aiSuggestedPoints}/${maxPoints}</span>
-                </div>
-
-                <div class="w-px h-8 bg-gray-700 mx-1"></div>
-
-                <div class="flex items-center gap-2">
-                    <label class="text-xs text-gray-400 font-medium">Grade:</label>
-                    <input type="number" min="0" max="${maxPoints}" placeholder="-"
-                        class="points-input"
-                        style="width: 40px; background: #0f172a; border: 1px solid #4b5563; color: white; border-radius: 4px; text-align: center; font-weight: bold; height: 28px;"
-                    >
-                    <span class="text-xs text-gray-500">/${maxPoints}</span>
-                </div>
-            </div>
-
-            <div class="flex items-center gap-1 pl-2">
-                <button class="comment-toggle hover:bg-white/5 p-1.5 rounded transition-colors text-gray-400 hover:text-blue-400" title="Comment">
-                    <span class="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
-                </button>
-                <button class="scroll-to-rubric-btn hover:bg-white/5 p-1.5 rounded transition-colors text-gray-400 hover:text-blue-400" title="Rubric">
-                    <span class="material-symbols-outlined text-[18px]">menu_book</span>
-                </button>
-            </div>
-
-            <div class="comment-body hidden absolute bottom-full left-0 mb-2 w-full bg-[#1e293b] border border-gray-600 rounded-lg shadow-xl p-2 z-50">
-                <textarea class="w-full bg-transparent text-white text-sm p-1 border-none focus:ring-0 resize-none" rows="2" placeholder="Add comment...">${aiComment}</textarea>
-            </div>
-        `;
-
-                checkpointWrapper.appendChild(checkpointEl);
-                overlayContainer.appendChild(checkpointWrapper);
-
-                // Re-add rubric highlights logic
-                if (rubricOverlay) {
-                    const rubricTarget = document.createElement('div');
-                    rubricTarget.id = `target${index + 1}`;
-                    rubricTarget.className = 'absolute pointer-events-auto p-2 my-2 border-2 border-orange-400 rounded-md bg-orange-400/10';
-                    const rubricCanvas = document.querySelector(`#rubric-viewer-container canvas:nth-child(${cp.rubricPage || 1})`);
-                    if (rubricCanvas) {
-                        rubricTarget.style.top = `${rubricCanvas.offsetTop + (rubricCanvas.offsetHeight * 0.3)}px`;
-                        rubricTarget.style.left = '10%';
-                        rubricTarget.style.width = '80%';
-                        rubricTarget.style.height = '10%';
-                    }
-                    rubricOverlay.appendChild(rubricTarget);
+                if (!targetPageNum) {
+                    console.warn(`[RubricScroll] No rubric page mapped for ${questionId}`);
+                    return;
                 }
-            });
 
-            // Essential: Re-initialize Listeners for the newly created elements
-            setupPointsInputs();
-            setupArrows();
-            initializeCommentWidgets();
-            initializeScrollToRubricButtons();
+                const rubricTabBtn = document.getElementById('rubric-tab-btn');
+                const referenceTabBtn = document.getElementById('reference-tab-btn');
+                const broadcastsTabBtn = document.getElementById('broadcasts-tab-btn');
+                const rubricContent = document.getElementById('rubric-content');
+                const referenceContent = document.getElementById('reference-content');
+                const broadcastsContent = document.getElementById('broadcasts-content');
+                const pdfZoomControls = document.getElementById('pdf-zoom-controls');
+                const rightPanelFooter = document.getElementById('right-panel-footer');
 
-            // --- FIX: Manually initialize Checkpoint Comments ---
-            // This explicitly finds the toggle and body within the newly created checkpoints
-            // and attaches the listener safely, preventing the "null" error.
-            document.querySelectorAll('.grading-checkpoint-group').forEach(group => {
-                const toggle = group.querySelector('.comment-toggle');
-                const body = group.querySelector('.comment-body');
+                // Ensure Rubric tab is active
+                if (!rubricTabBtn.classList.contains('text-primary')) {
+                    console.log("[RubricScroll] Switching to Rubric tab manually");
 
-                if (toggle && body) {
-                    toggle.addEventListener('click', (e) => {
-                        e.stopPropagation(); // Prevent drag or parent click events
-                        const isHidden = body.classList.contains('hidden');
-                        if (isHidden) {
-                            body.classList.remove('hidden');
-                            const ta = body.querySelector('textarea');
-                            if (ta) {
-                                ta.focus();
-                                // Prevent typing in the box from dragging the checkpoint bar
-                                ta.addEventListener('mousedown', (evt) => evt.stopPropagation());
-                            }
-                        } else {
-                            body.classList.add('hidden');
+                    // Deactivate others
+                    [rubricTabBtn, referenceTabBtn, broadcastsTabBtn].forEach(btn => {
+                        if (btn) {
+                            btn.classList.remove('text-primary', 'border-primary', 'bg-primary/10');
+                            btn.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'border-transparent');
                         }
                     });
+                    [rubricContent, referenceContent, broadcastsContent].forEach(content => {
+                        if (content) content.classList.add('hidden');
+                    });
+
+                    // Activate Rubric
+                    rubricTabBtn.classList.add('text-primary', 'border-primary', 'bg-primary/10');
+                    rubricTabBtn.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'border-transparent');
+                    rubricContent.classList.remove('hidden');
+
+                    // Show controls
+                    if (pdfZoomControls) pdfZoomControls.classList.remove('hidden');
+                    if (rightPanelFooter) rightPanelFooter.classList.remove('hidden');
+
+                    // Update selectors visibility
+                    const rubricSelector = document.getElementById('rubric-selector-container');
+                    const referenceSelector = document.getElementById('reference-selector-container');
+                    if (rubricSelector) rubricSelector.classList.remove('hidden');
+                    if (referenceSelector) referenceSelector.classList.add('hidden');
+                }
+
+                // Allow UI to update (tab switch) before rendering/scrolling
+                setTimeout(async () => {
+                    // Ensure Rubric is rendered
+                    const rubricContainer = document.getElementById('rubric-viewer-container');
+                    let pages = rubricContainer.querySelectorAll('canvas');
+
+                    // Robust check: If no pages found, render regardless of cache
+                    if (pages.length === 0) {
+                        console.log("[RubricScroll] No pages found. Rendering...");
+                        if (window.initializeRubricViewer) {
+                            const success = await window.initializeRubricViewer();
+                            console.log(`[RubricScroll] Render success: ${success}`);
+                            if (success) {
+                                pdfRenderCache['rubric'] = true;
+                                pages = rubricContainer.querySelectorAll('canvas');
+                            } else {
+                                return;
+                            }
+                        }
+                    } else {
+                        console.log("[RubricScroll] Pages found. Skipping render.");
+                    }
+
+                    console.log(`[RubricScroll] Found ${pages.length} pages in rubric container.`);
+                    const targetPageCanvas = pages[targetPageNum - 1]; // 0-based index
+
+                    if (targetPageCanvas) {
+                        console.log("[RubricScroll] Target canvas found. Scrolling and highlighting.");
+
+                        // Use scrollIntoView for robust scrolling
+                        targetPageCanvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                        // Draw Orange Box
+                        const existingHighlight = document.getElementById('rubric-highlight-box');
+                        if (existingHighlight) existingHighlight.remove();
+
+                        const highlightBox = document.createElement('div');
+                        highlightBox.id = 'rubric-highlight-box';
+                        highlightBox.style.position = 'absolute';
+                        highlightBox.style.border = '4px solid orange';
+                        highlightBox.style.backgroundColor = 'rgba(255, 165, 0, 0.1)';
+                        highlightBox.style.pointerEvents = 'none';
+                        highlightBox.style.zIndex = '10';
+                        highlightBox.style.borderRadius = '8px';
+
+                        // Position exactly over the canvas
+                        highlightBox.style.top = `${targetPageCanvas.offsetTop}px`;
+                        highlightBox.style.left = `${targetPageCanvas.offsetLeft}px`;
+                        highlightBox.style.width = `${targetPageCanvas.width}px`;
+                        highlightBox.style.height = `${targetPageCanvas.height}px`;
+
+                        rubricContainer.appendChild(highlightBox);
+
+                        setTimeout(() => {
+                            highlightBox.style.transition = 'opacity 1s';
+                            highlightBox.style.opacity = '0';
+                            setTimeout(() => highlightBox.remove(), 1000);
+                        }, 3000);
+                    } else {
+                        console.warn(`[RubricScroll] Target canvas for page ${targetPageNum} not found.`);
+                    }
+                }, 50); // Small delay for tab switch layout update
+            });
+
+            // Dynamically update the hover title using delegation
+            document.addEventListener('mouseover', (e) => {
+                const button = e.target.closest('.scroll-to-rubric-btn');
+                if (!button) return;
+
+                const isReferenceTabActive = !document.getElementById('reference-content').classList.contains('hidden');
+                if (isReferenceTabActive) {
+                    button.title = 'Scroll to relevant reference';
+                } else {
+                    button.title = 'Scroll to rubric criterion';
                 }
             });
         }
+
+        function initializeContextMenu() {
+            const menu = document.getElementById('exam-item-context-menu');
+            let currentTarget = null;
+
+            // Listen for open event from grading-exams-list.js
+            menu.addEventListener('context-menu-opened', (e) => {
+                currentTarget = e.detail; // { studentName, questionId }
+                console.log("[ContextMenu] Opened for:", currentTarget);
+            });
+
+            // Button Handlers
+            menu.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (!currentTarget) return;
+
+                    const action = btn.dataset.action;
+                    let status = 0;
+                    if (action === 'graded-once') status = 1;
+                    if (action === 'graded-twice') status = 2;
+
+                    console.log(`[ContextMenu] Action: ${action}, Status: ${status}`);
+
+                    if (window.updateManualGradingStatus) {
+                        window.updateManualGradingStatus(
+                            window.currentRepository,
+                            currentTarget.studentName,
+                            currentTarget.questionId,
+                            status,
+                            () => {
+                                console.log("[ContextMenu] Status updated.");
+                            }
+                        );
+                    }
+                    menu.classList.add('hidden');
+                });
+            });
+
+            // Close on outside click
+            document.addEventListener('click', (e) => {
+                if (!menu.contains(e.target)) {
+                    menu.classList.add('hidden');
+                }
+            });
+        }
+
+        // Obsolete setupChecklistClickHandlers removed.
+        // Click handling is now managed by grading-exams-list.js
+
+        // Obsolete renderGradingCheckpoints removed.
+        // Checkpoint rendering is now managed by grading-view.js
+
+
+        // Essential: Re-initialize Listeners for the newly created elements
+        setupPointsInputs();
+        setupArrows();
+        initializeCommentWidgets();
+        initializeScrollToRubricButtons();
+
+        // --- FIX: Manually initialize Checkpoint Comments ---
+        // This explicitly finds the toggle and body within the newly created checkpoints
+        // and attaches the listener safely, preventing the "null" error.
+        document.querySelectorAll('.grading-checkpoint-group').forEach(group => {
+            const toggle = group.querySelector('.comment-toggle');
+            const body = group.querySelector('.comment-body');
+
+            if (toggle && body) {
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent drag or parent click events
+                    const isHidden = body.classList.contains('hidden');
+                    if (isHidden) {
+                        body.classList.remove('hidden');
+                        const ta = body.querySelector('textarea');
+                        if (ta) {
+                            ta.focus();
+                            // Prevent typing in the box from dragging the checkpoint bar
+                            ta.addEventListener('mousedown', (evt) => evt.stopPropagation());
+                        }
+                    } else {
+                        body.classList.add('hidden');
+                    }
+                });
+            }
+        });
 
         const rubricTabBtn = document.getElementById('rubric-tab-btn');
         const referenceTabBtn = document.getElementById('reference-tab-btn');
@@ -1665,8 +1444,13 @@
                     // Render PDF on first view
                     if (tab.renderFunc && !pdfRenderCache[tab.id]) {
                         console.log(`First render for ${tab.id}`);
-                        tab.renderFunc();
-                        pdfRenderCache[tab.id] = true;
+                        // We await the render function. If it returns true (success), we cache it.
+                        // If it returns false (e.g. container hidden/0 width), we don't cache, so it tries again next click.
+                        Promise.resolve(tab.renderFunc()).then(success => {
+                            if (success) {
+                                pdfRenderCache[tab.id] = true;
+                            }
+                        });
                     }
                 }
 
@@ -1813,7 +1597,6 @@
         // --- Grading Portal Broadcast Archive Logic ---
         const toggleArchiveBtnGrading = document.getElementById('toggle-archive-view-btn-grading');
         const broadcastTitleHeader = document.getElementById('broadcast-title-header');
-        let isShowingArchivedGrading = false;
 
         if (toggleArchiveBtnGrading) {
             toggleArchiveBtnGrading.addEventListener('click', () => {

@@ -4,51 +4,158 @@
     "examTemplateUrl": "assets/exams/no-exam-uploaded.pdf",
     "questions": [
         {
-            "id": "Q1", "name": "Q1: Question One", "pages": "2",
-            "progress": { "aiHigh": 65, "aiLow": 35, "gradedOnce": 0, "graded2Plus": 0 },
+            "id": "Q1",
+            "name": "Q1: Question One",
+            "pages": "2",
+            "progress": {
+                "aiHigh": 65,
+                "aiLow": 35,
+                "gradedOnce": 0,
+                "graded2Plus": 0
+            },
             "points": 8
         },
         {
-            "id": "Q2", "name": "Q2: Question Two", "pages": "3",
-            "progress": { "aiHigh": 80, "aiLow": 20, "gradedOnce": 0, "graded2Plus": 0 },
+            "id": "Q2",
+            "name": "Q2: Question Two",
+            "pages": "3",
+            "progress": {
+                "aiHigh": 80,
+                "aiLow": 20,
+                "gradedOnce": 0,
+                "graded2Plus": 0
+            },
             "points": 6
         },
         {
-            "id": "Q3", "name": "Q3: Question Three", "pages": "4",
-            "progress": { "aiHigh": 50, "aiLow": 50, "gradedOnce": 0, "graded2Plus": 0 },
+            "id": "Q3",
+            "name": "Q3: Question Three",
+            "pages": "4",
+            "progress": {
+                "aiHigh": 50,
+                "aiLow": 50,
+                "gradedOnce": 0,
+                "graded2Plus": 0
+            },
             "subquestions": [
-                { "id": "Q3A", "name": "3.A", "points": 3 },
-                { "id": "Q3B", "name": "3.B", "points": 6 }
+                {
+                    "id": "Q3A",
+                    "name": "3.A",
+                    "points": 3
+                },
+                {
+                    "id": "Q3B",
+                    "name": "3.B",
+                    "points": 6
+                }
             ]
         },
         {
-            "id": "Q4", "name": "Q4: Question Four", "pages": "5",
-            "progress": { "aiHigh": 70, "aiLow": 30, "gradedOnce": 0, "graded2Plus": 0 },
+            "id": "Q4",
+            "name": "Q4: Question Four",
+            "pages": "5",
+            "progress": {
+                "aiHigh": 70,
+                "aiLow": 30,
+                "gradedOnce": 0,
+                "graded2Plus": 0
+            },
             "subquestions": [
-                { "id": "Q4A", "name": "4.A", "points": 4 },
-                { "id": "Q4B", "name": "4.B", "points": 4 }
+                {
+                    "id": "Q4A",
+                    "name": "4.A",
+                    "points": 4
+                },
+                {
+                    "id": "Q4B",
+                    "name": "4.B",
+                    "points": 4
+                }
             ]
         }
     ],
     "gradingCheckpoints": [
-        { "questionId": "Q1", "page": 2, "rubricPage": 2, "position": { "x": "50%", "y": "95%" } },
-        { "questionId": "Q2", "page": 3, "rubricPage": 3, "position": { "x": "50%", "y": "95%" } },
-        { "questionId": "Q3A", "page": 4, "rubricPage": 4, "position": { "x": "50%", "y": "95%" } },
-        { "questionId": "Q4A", "page": 5, "rubricPage": 5, "position": { "x": "50%", "y": "95%" } }
+        {
+            "questionId": "Q1",
+            "page": 2,
+            "rubricPage": 2,
+            "position": {
+                "x": "50%",
+                "y": "95%"
+            }
+        },
+        {
+            "questionId": "Q2",
+            "page": 3,
+            "rubricPage": 3,
+            "position": {
+                "x": "50%",
+                "y": "95%"
+            }
+        },
+        {
+            "questionId": "Q3A",
+            "page": 4,
+            "rubricPage": 4,
+            "position": {
+                "x": "50%",
+                "y": "95%"
+            }
+        },
+        {
+            "questionId": "Q4A",
+            "page": 5,
+            "rubricPage": 5,
+            "position": {
+                "x": "50%",
+                "y": "95%"
+            }
+        }
     ],
     "rubrics": [],
     "references": [],
-    "studentSubmissions": [{
+    "studentSubmissions": [
+        {
             "id": "student_201",
             "name": "Student A",
             "url": "assets/student-solutions/studentA.pdf",
             "grades": [
-                { "questionId": "Q1", "confidence": 60, "aiSuggestedScore": 4, "comment": "2 points for the correct derivative, 0 points for not getting the critical values, 1 point for the correct classification formula but not the concrete values, 1 point for the correct calculation formula but no concrete value" },
-                { "questionId": "Q2", "confidence": 26, "aiSuggestedScore": 5, "comment": "2 points for the correct intersection points, 1 point for correct bounds but wrong integral, 2 points for the correct integral evaluation" },
-                { "questionId": "Q3A", "confidence": 72, "aiSuggestedScore": 3, "comment": "3 points awarded for correctly identifying the transition matrix." },
-                { "questionId": "Q3B", "confidence": 65, "aiSuggestedScore": 0, "comment": "0 points as the subsequent calculations were not attempted." },
-                { "questionId": "Q4A", "confidence": 91, "aiSuggestedScore": 4 },
-                { "questionId": "Q4B", "confidence": 82, "aiSuggestedScore": 3 }
+                {
+                    "questionId": "Q1",
+                    "confidence": 85,
+                    "aiSuggestedScore": 2,
+                    "comment": "Student correctly found the first derivative f′(x) (2 points) but failed to correctly factor it or find the critical points, thus receiving no further credit."
+                },
+                {
+                    "questionId": "Q2",
+                    "confidence": 90,
+                    "aiSuggestedScore": 4,
+                    "comment": "Student correctly found the intersection points (2 points) and the correct antiderivatives (1 point), and had the correct bounds (1 point), but set up the integral with the wrong order of subtraction, leading to an incorrect final result."
+                },
+                {
+                    "questionId": "Q3A",
+                    "confidence": 95,
+                    "aiSuggestedScore": 2,
+                    "comment": "Student correctly identified all coefficients for A and b but wrote them as two separate matrices/vectors instead of the combined augmented matrix [A|b]."
+                },
+                {
+                    "questionId": "Q3B",
+                    "confidence": 95,
+                    "aiSuggestedScore": 0,
+                    "comment": "Student explicitly stated they forgot how to perform the elimination and showed no required steps for Gaussian elimination or back-substitution."
+                },
+                {
+                    "questionId": "Q4A",
+                    "confidence": 100,
+                    "aiSuggestedScore": 4,
+                    "comment": "Student correctly applied the Law of Total Probability (0.6⋅0.05+0.4⋅0.02) and found the exact correct answer of 0.038."
+                },
+                {
+                    "questionId": "Q4B",
+                    "confidence": 90,
+                    "aiSuggestedScore": 0,
+                    "comment": "Student used an incorrect formula that was not Bayes' Theorem, resulting in an incorrect final probability, thus receiving no credit."
+                }
             ]
         },
         {
@@ -56,12 +163,42 @@
             "name": "Student B",
             "url": "assets/student-solutions/studentB.pdf",
             "grades": [
-                { "questionId": "Q1", "confidence": 70, "aiSuggestedScore": 7 },
-                { "questionId": "Q2", "confidence": 71, "aiSuggestedScore": 5 },
-                { "questionId": "Q3A", "confidence": 43, "aiSuggestedScore": 1 },
-                { "questionId": "Q3B", "confidence": 58, "aiSuggestedScore": 3 },
-                { "questionId": "Q4A", "confidence": 85, "aiSuggestedScore": 3 },
-                { "questionId": "Q4B", "confidence": 77, "aiSuggestedScore": 3 }
+                {
+                    "questionId": "Q1",
+                    "confidence": 95,
+                    "aiSuggestedScore": 0,
+                    "comment": "Student only discussed limits at infinity and did not attempt to find the derivative or critical points, which are necessary to solve the problem."
+                },
+                {
+                    "questionId": "Q2",
+                    "confidence": 95,
+                    "aiSuggestedScore": 0,
+                    "comment": "Student incorrectly claimed there was \"No enclosed area\" and showed no attempt to find intersection points or set up the integral."
+                },
+                {
+                    "questionId": "Q3A",
+                    "confidence": 90,
+                    "aiSuggestedScore": 0,
+                    "comment": "The matrix written was a mix of variables and coefficients and was not in the correct augmented matrix form [A|b]."
+                },
+                {
+                    "questionId": "Q3B",
+                    "confidence": 80,
+                    "aiSuggestedScore": 1,
+                    "comment": "Student provided the correct final solution (5,3,−2) (1 point) but showed none of the required Gaussian elimination or back-substitution steps."
+                },
+                {
+                    "questionId": "Q4A",
+                    "confidence": 95,
+                    "aiSuggestedScore": 4,
+                    "comment": "Student correctly stated the final answer of 3.8%, implying the correct application of the Law of Total Probability, despite missing the explicit calculation steps."
+                },
+                {
+                    "questionId": "Q4B",
+                    "confidence": 75,
+                    "aiSuggestedScore": 1,
+                    "comment": "The final answer of ∼70% was close to the correct 78.9%. Awarded 1 point for implicit knowledge of the ratio's components, but no formula or correct calculation was provided."
+                }
             ]
         },
         {
@@ -69,12 +206,36 @@
             "name": "Student C",
             "url": "assets/student-solutions/studentC.pdf",
             "grades": [
-                { "questionId": "Q1", "confidence": 89, "aiSuggestedScore": 8 },
-                { "questionId": "Q2", "confidence": 81, "aiSuggestedScore": 6 },
-                { "questionId": "Q3A", "confidence": 68, "aiSuggestedScore": 2 },
-                { "questionId": "Q3B", "confidence": 74, "aiSuggestedScore": 5 },
-                { "questionId": "Q4A", "confidence": 94, "aiSuggestedScore": 4 },
-                { "questionId": "Q4B", "confidence": 88, "aiSuggestedScore": 4 }
+                {
+                    "questionId": "Q1",
+                    "confidence": 89,
+                    "aiSuggestedScore": 8
+                },
+                {
+                    "questionId": "Q2",
+                    "confidence": 81,
+                    "aiSuggestedScore": 6
+                },
+                {
+                    "questionId": "Q3A",
+                    "confidence": 68,
+                    "aiSuggestedScore": 2
+                },
+                {
+                    "questionId": "Q3B",
+                    "confidence": 74,
+                    "aiSuggestedScore": 5
+                },
+                {
+                    "questionId": "Q4A",
+                    "confidence": 94,
+                    "aiSuggestedScore": 4
+                },
+                {
+                    "questionId": "Q4B",
+                    "confidence": 88,
+                    "aiSuggestedScore": 4
+                }
             ]
         },
         {
@@ -82,41 +243,194 @@
             "name": "Student D",
             "url": "assets/student-solutions/studentD.pdf",
             "grades": [
-                { "questionId": "Q1", "confidence": 62, "aiSuggestedScore": 5 },
-                { "questionId": "Q2", "confidence": 75, "aiSuggestedScore": 5 },
-                { "questionId": "Q3A", "confidence": 33, "aiSuggestedScore": 0 },
-                { "questionId": "Q3B", "confidence": 48, "aiSuggestedScore": 2 },
-                { "questionId": "Q4A", "confidence": 70, "aiSuggestedScore": 3 },
-                { "questionId": "Q4B", "confidence": 65, "aiSuggestedScore": 2 }
+                {
+                    "questionId": "Q1",
+                    "confidence": 62,
+                    "aiSuggestedScore": 5
+                },
+                {
+                    "questionId": "Q2",
+                    "confidence": 75,
+                    "aiSuggestedScore": 5
+                },
+                {
+                    "questionId": "Q3A",
+                    "confidence": 33,
+                    "aiSuggestedScore": 0
+                },
+                {
+                    "questionId": "Q3B",
+                    "confidence": 48,
+                    "aiSuggestedScore": 2
+                },
+                {
+                    "questionId": "Q4A",
+                    "confidence": 70,
+                    "aiSuggestedScore": 3
+                },
+                {
+                    "questionId": "Q4B",
+                    "confidence": 65,
+                    "aiSuggestedScore": 2
+                }
             ]
         },
-        { "id": "student_205", "name": "Student E", "url": "assets/student-solutions/studentE.pdf", "grades": [] }
+        {
+            "id": "student_205",
+            "name": "Student E",
+            "url": "assets/student-solutions/studentE.pdf",
+            "grades": [
+                {
+                    "questionId": "Q1",
+                    "confidence": 45,
+                    "aiSuggestedScore": 3
+                },
+                {
+                    "questionId": "Q2",
+                    "confidence": 55,
+                    "aiSuggestedScore": 2
+                },
+                {
+                    "questionId": "Q3A",
+                    "confidence": 88,
+                    "aiSuggestedScore": 3
+                },
+                {
+                    "questionId": "Q3B",
+                    "confidence": 92,
+                    "aiSuggestedScore": 6
+                },
+                {
+                    "questionId": "Q4A",
+                    "confidence": 60,
+                    "aiSuggestedScore": 2
+                },
+                {
+                    "questionId": "Q4B",
+                    "confidence": 40,
+                    "aiSuggestedScore": 1
+                }
+            ]
+        }
     ],
     "appState": {
         "gradingProgress": {
-            "aiHigh": 66, "aiLow": 34, "gradedOnce": 0, "graded2Plus": 0
+            "aiHigh": 66,
+            "aiLow": 34,
+            "gradedOnce": 0,
+            "graded2Plus": 0
         },
         "taskAllocation": {
             "tas": [
-                { "id": "TA1", "name": "TA 1", "workload": 0, "maxWorkload": 20, "tasks": [] },
-                { "id": "TA2", "name": "TA 2", "workload": 0, "maxWorkload": 20, "tasks": [] },
-                { "id": "TA3", "name": "TA 3", "workload": 0, "maxWorkload": 20, "tasks": [] },
-                { "id": "TA4", "name": "TA 4", "workload": 0, "maxWorkload": 20, "tasks": [] },
-                { "id": "TA5", "name": "TA 5", "workload": 0, "maxWorkload": 20, "tasks": [] }
+                {
+                    "id": "TA1",
+                    "name": "TA 1",
+                    "workload": 0,
+                    "maxWorkload": 20,
+                    "tasks": []
+                },
+                {
+                    "id": "TA2",
+                    "name": "TA 2",
+                    "workload": 0,
+                    "maxWorkload": 20,
+                    "tasks": []
+                },
+                {
+                    "id": "TA3",
+                    "name": "TA 3",
+                    "workload": 0,
+                    "maxWorkload": 20,
+                    "tasks": []
+                },
+                {
+                    "id": "TA4",
+                    "name": "TA 4",
+                    "workload": 0,
+                    "maxWorkload": 20,
+                    "tasks": []
+                },
+                {
+                    "id": "TA5",
+                    "name": "TA 5",
+                    "workload": 0,
+                    "maxWorkload": 20,
+                    "tasks": []
+                }
             ],
             "tasks": [
-                { "taskId": "Q1", "version": "first", "confidence": 85, "assigned": false },
-                { "taskId": "Q1", "version": "second", "confidence": 85, "assigned": false },
-                { "taskId": "Q2", "version": "first", "confidence": 72, "assigned": false },
-                { "taskId": "Q2", "version": "second", "confidence": 72, "assigned": false },
-                { "taskId": "Q3A", "version": "first", "confidence": 34, "assigned": false },
-                { "taskId": "Q3A", "version": "second", "confidence": 34, "assigned": false },
-                { "taskId": "Q3B", "version": "first", "confidence": 68, "assigned": false },
-                { "taskId": "Q3B", "version": "second", "confidence": 68, "assigned": false },
-                { "taskId": "Q4A", "version": "first", "confidence": 91, "assigned": false },
-                { "taskId": "Q4A", "version": "second", "confidence": 91, "assigned": false },
-                { "taskId": "Q4B", "version": "first", "confidence": 55, "assigned": false },
-                { "taskId": "Q4B", "version": "second", "confidence": 55, "assigned": false }
+                {
+                    "taskId": "Q1",
+                    "version": "first",
+                    "confidence": 85,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q1",
+                    "version": "second",
+                    "confidence": 85,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q2",
+                    "version": "first",
+                    "confidence": 72,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q2",
+                    "version": "second",
+                    "confidence": 72,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q3A",
+                    "version": "first",
+                    "confidence": 34,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q3A",
+                    "version": "second",
+                    "confidence": 34,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q3B",
+                    "version": "first",
+                    "confidence": 68,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q3B",
+                    "version": "second",
+                    "confidence": 68,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q4A",
+                    "version": "first",
+                    "confidence": 91,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q4A",
+                    "version": "second",
+                    "confidence": 91,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q4B",
+                    "version": "first",
+                    "confidence": 55,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q4B",
+                    "version": "second",
+                    "confidence": 55,
+                    "assigned": false
+                }
             ]
         },
         "gradingParameters": {
