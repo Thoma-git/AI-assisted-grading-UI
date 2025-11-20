@@ -120,21 +120,22 @@ function renderGradingCheckpoints(questionId) {
     checkpoints = [];
 
     const repo = window.currentRepository;
-    let relevantCheckpoints = repo.gradingCheckpoints.filter(cp => cp.questionId === questionId);
+    let relevantCheckpoints = [];
 
-    // Fallback search logic for related checkpoints
-    if (relevantCheckpoints.length === 0) {
-        const currentQuestion = repo.questions.find(q => q.id === questionId);
-        if (currentQuestion?.subquestions) {
-            const sub = currentQuestion.subquestions.find(s => repo.gradingCheckpoints.some(cp => cp.questionId === s.id));
-            if (sub) relevantCheckpoints = repo.gradingCheckpoints.filter(cp => cp.questionId === sub.id);
-        } else {
-            const parent = repo.questions.find(q => q.subquestions?.some(sub => sub.id === questionId));
-            if (parent) {
-                const sibling = parent.subquestions.find(sub => repo.gradingCheckpoints.some(cp => cp.questionId === sub.id));
-                if (sibling) relevantCheckpoints = repo.gradingCheckpoints.filter(cp => cp.questionId === sibling.id);
-            }
-        }
+    // 1. Determine if we are looking at a Parent Question or a Subquestion/Standalone
+    const parentQuestion = repo.questions.find(q => q.id === questionId);
+
+    if (parentQuestion && parentQuestion.subquestions && parentQuestion.subquestions.length > 0) {
+        // CASE A: Parent Question -> Show ALL subquestion checkpoints
+        console.log(`[GradingView] Question ${questionId} is a parent. Gathering subquestion checkpoints...`);
+        parentQuestion.subquestions.forEach(sub => {
+            const subCheckpoints = repo.gradingCheckpoints.filter(cp => cp.questionId === sub.id);
+            relevantCheckpoints.push(...subCheckpoints);
+        });
+    } else {
+        // CASE B: Subquestion or Standalone -> Show ONLY this question's checkpoints
+        // (No fallback to siblings!)
+        relevantCheckpoints = repo.gradingCheckpoints.filter(cp => cp.questionId === questionId);
     }
 
     console.log(`[GradingView] Rendering checkpoints for ${questionId}. Found ${relevantCheckpoints.length} checkpoints.`);
@@ -142,29 +143,26 @@ function renderGradingCheckpoints(questionId) {
     console.log(`[GradingView] Found ${wrappers.length} page wrappers in DOM.`);
     wrappers.forEach(w => console.log(`[GradingView] Wrapper: Page ${w.getAttribute('data-page-number')}`));
 
-    // DEBUG: Visual Banner
-    let debugBanner = document.getElementById('debug-banner');
-    if (!debugBanner) {
-        debugBanner = document.createElement('div');
-        debugBanner.id = 'debug-banner';
-        debugBanner.style.cssText = 'position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: lime; padding: 10px; z-index: 9999; font-family: monospace; pointer-events: none;';
-        document.body.appendChild(debugBanner);
-    }
-    debugBanner.innerHTML = `Q: ${questionId} | CPs: ${relevantCheckpoints.length}<br>`;
 
-    // Calculate Max Points for Input Validation (Per Checkpoint/Question)
-    let maxPoints = 0;
-    const qData = repo.questions.find(q => q.id === questionId) || repo.questions.find(q => q.subquestions?.some(sq => sq.id === questionId));
-    if (qData) {
-        if (qData.id === questionId && qData.points) maxPoints = qData.points;
-        else if (qData.subquestions) {
-            const sub = qData.subquestions.find(sq => sq.id === questionId);
-            maxPoints = sub ? sub.points : qData.subquestions.reduce((acc, curr) => acc + (curr.points || 0), 0);
-        }
-    }
-    if (!maxPoints) maxPoints = 5;
 
     relevantCheckpoints.forEach((cp, index) => {
+        // Calculate Max Points for this specific checkpoint
+        let maxPoints = 0;
+        const cpQId = cp.questionId;
+
+        // Try to find as top-level question
+        const qTop = repo.questions.find(q => q.id === cpQId);
+        if (qTop) {
+            maxPoints = qTop.points || 0;
+        } else {
+            // Try to find as subquestion
+            const qParent = repo.questions.find(q => q.subquestions?.some(sq => sq.id === cpQId));
+            if (qParent) {
+                const qSub = qParent.subquestions.find(sq => sq.id === cpQId);
+                maxPoints = qSub ? (qSub.points || 0) : 0;
+            }
+        }
+        if (!maxPoints) maxPoints = 5; // Fallback
         const gradeEntry = currentStudent.grades?.find(g => g.questionId === cp.questionId) || {}; // Use cp.questionId specifically
         const aiConfidence = gradeEntry.confidence || 0;
         const aiSuggestedPoints = gradeEntry.aiSuggestedScore || 0;
@@ -311,21 +309,7 @@ function renderGradingCheckpoints(questionId) {
 
         textArea.addEventListener('mousedown', (e) => e.stopPropagation());
 
-        // ... Rubric Scroll Logic (unchanged) ...
-        const rubricBtn = el.querySelector('.rubric-scroll-btn');
-        rubricBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const rubricContainer = document.getElementById('rubric-content');
-            const targetHighlight = document.getElementById(`target${index + 1}`);
-            const rubricTabBtn = document.getElementById('rubric-tab-btn');
 
-            if (rubricTabBtn) rubricTabBtn.click();
-            if (rubricContainer && targetHighlight) {
-                rubricContainer.scrollTo({ top: targetHighlight.offsetTop - 150, behavior: 'smooth' });
-                targetHighlight.classList.add('bg-orange-500/30');
-                setTimeout(() => targetHighlight.classList.remove('bg-orange-500/30'), 1500);
-            }
-        });
     });
 }
 
@@ -389,7 +373,116 @@ function updateCheckpointPositions() {
 }
 
 function setupGlobalEventListeners() {
-    // No longer needed
+    const panel = document.getElementById('grading-panel');
+    if (panel) {
+        panel.addEventListener('scroll', () => {
+            requestAnimationFrame(updateStickyCheckpoints);
+        });
+    }
+    window.addEventListener('resize', () => {
+        requestAnimationFrame(updateStickyCheckpoints);
+    });
+}
+
+function updateStickyCheckpoints() {
+    const panel = document.getElementById('grading-panel');
+    if (!panel || checkpoints.length === 0) return;
+
+    const panelRect = panel.getBoundingClientRect();
+    const STICKY_OFFSET = 20; // Distance from bottom
+    const OVERLAP_PADDING = 10; // Min distance from previous element
+
+    // 1. Calculate screen positions for all checkpoints based on their PAGE
+    const checkpointsWithPos = checkpoints.map(cp => {
+        const pageNum = cp.data.page || 1;
+        const pageWrapper = document.querySelector(`.page-wrapper[data-page-number="${pageNum}"]`);
+
+        if (!pageWrapper) {
+            return null;
+        }
+
+        const pageRect = pageWrapper.getBoundingClientRect();
+        const naturalYPercent = parseFloat(cp.data.position.y);
+        const naturalYPixelsInPage = (naturalYPercent / 100) * pageRect.height;
+
+        // Screen Y of the center of the element
+        const elHeight = cp.element.offsetHeight;
+        const naturalTopScreen = pageRect.top + naturalYPixelsInPage - (elHeight / 2);
+
+        return { ...cp, naturalTopScreen, elHeight, pageRect };
+    }).filter(cp => cp !== null)
+        .sort((a, b) => a.naturalTopScreen - b.naturalTopScreen);
+
+    // 2. Find the first candidate that is strictly below the viewport
+    let stickyCandidate = null;
+    let prevCheckpoint = null;
+
+    for (let i = 0; i < checkpointsWithPos.length; i++) {
+        const cp = checkpointsWithPos[i];
+
+        // Check if this checkpoint is completely below the visible panel area
+        if (cp.naturalTopScreen > panelRect.bottom + 5) {
+            stickyCandidate = cp;
+            if (i > 0) {
+                prevCheckpoint = checkpointsWithPos[i - 1];
+            }
+            break;
+        }
+    }
+
+    // 3. Reset ALL checkpoints first to ensure clean state
+    checkpoints.forEach(cp => {
+        cp.element.style.position = 'absolute';
+        cp.element.style.top = cp.data.position.y;
+        cp.element.style.left = cp.data.position.x;
+        // Default transform
+        cp.element.style.transform = 'translate(-50%, -50%)';
+        cp.element.style.zIndex = '50';
+        cp.element.style.width = '620px';
+        // Ensure no transition lag during scroll
+        cp.element.style.transition = 'none';
+    });
+
+    // 4. Apply Sticky Logic if Candidate Found
+    if (stickyCandidate) {
+        let shouldStick = true;
+
+        // Overlap Prevention
+        if (prevCheckpoint) {
+            const prevRect = prevCheckpoint.element.getBoundingClientRect();
+            const prevBottomScreen = prevRect.bottom;
+
+            // Calculate where the sticky top would be
+            // Sticky Bottom Edge = panelRect.bottom - STICKY_OFFSET
+            // Sticky Top Edge = Sticky Bottom Edge - stickyCandidate.element.offsetHeight
+            const stickyTopScreen = panelRect.bottom - STICKY_OFFSET - stickyCandidate.elHeight;
+
+            if (stickyTopScreen < prevBottomScreen + OVERLAP_PADDING) {
+                shouldStick = false;
+            }
+        }
+
+        if (shouldStick) {
+            const el = stickyCandidate.element;
+
+            // Calculate deltaY to shift the element to the bottom
+            // Target Bottom = panelRect.bottom - STICKY_OFFSET
+            // Natural Bottom = stickyCandidate.naturalTopScreen + stickyCandidate.elHeight
+            // deltaY = Target Bottom - Natural Bottom
+
+            const targetBottom = panelRect.bottom - STICKY_OFFSET;
+            const naturalBottom = stickyCandidate.naturalTopScreen + stickyCandidate.elHeight;
+            const deltaY = targetBottom - naturalBottom;
+
+            // Apply transform
+            // We keep the -50% X translation, and add deltaY to the Y translation
+            // The original Y translation is -50%. We need to add deltaY pixels.
+            // Since we can't easily mix % and px in translate(x, y) without calc, we use calc.
+
+            el.style.transform = `translate(-50%, calc(-50% + ${deltaY}px))`;
+            el.style.zIndex = '100';
+        }
+    }
 }
 
 // --- GLOBAL HANDLER FOR INPUTS ---
@@ -447,8 +540,30 @@ function scrollToCheckpoint(index) {
     if (!cp) return;
     const panel = document.getElementById('grading-panel');
 
-    // Scroll to the element itself
-    cp.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Calculate the NATURAL position to scroll to
+    const pageNum = cp.data.page || 1;
+    const pageWrapper = document.querySelector(`.page-wrapper[data-page-number="${pageNum}"]`);
+
+    if (pageWrapper && panel) {
+        const naturalYPercent = parseFloat(cp.data.position.y);
+        const naturalYPixels = (naturalYPercent / 100) * pageWrapper.offsetHeight;
+
+        // Calculate the absolute top position of the target point within the scrollable container
+        // We assume pageWrapper is inside the scrollable panel
+        const pageTop = pageWrapper.offsetTop;
+        const targetTop = pageTop + naturalYPixels;
+
+        // Center the target in the panel
+        const scrollTarget = targetTop - (panel.clientHeight / 2);
+
+        panel.scrollTo({
+            top: scrollTarget,
+            behavior: 'smooth'
+        });
+    } else {
+        // Fallback if page wrapper not found (shouldn't happen if rendered)
+        cp.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 }
 
 function updateNavigationCircleStatus(qId, isScored) {
@@ -665,4 +780,191 @@ function setupComments() {
             saveRepositoryState();
         });
     }
+}
+
+export function initializeScrollToRubricButtons() {
+    // Use Event Delegation for dynamically created buttons
+    document.addEventListener('click', async (e) => {
+        const button = e.target.closest('.rubric-scroll-btn');
+        if (!button) return;
+
+        console.log("[RubricScroll] Button clicked");
+        e.stopPropagation(); // Prevent any parent click handlers
+
+        // Find the checkpoint index associated with this button
+        // The button is inside a checkpoint element with ID "source{index}"
+        const checkpointEl = button.closest('[id^="source"]');
+        if (!checkpointEl) {
+            console.warn("[RubricScroll] Could not find parent checkpoint element.");
+            return;
+        }
+
+        // Extract index from ID "source1", "source2", etc.
+        const indexStr = checkpointEl.id.replace('source', '');
+        const index = parseInt(indexStr) - 1; // 0-based index
+
+        if (isNaN(index) || index < 0 || index >= checkpoints.length) {
+            console.warn(`[RubricScroll] Invalid checkpoint index: ${index}`);
+            return;
+        }
+
+        const checkpoint = checkpoints[index];
+        const qId = checkpoint.data.questionId;
+
+        // Get rubric data from the checkpoint
+        // We need to find the matching gradingCheckpoint in the repo to get rubricPage and position
+        // The checkpoint.data might already have it if it came from repo.gradingCheckpoints
+        const rubricPage = checkpoint.data.rubricPage;
+        const rubricPosition = checkpoint.data.position;
+
+        console.log(`[RubricScroll] Question: ${qId}, Page: ${rubricPage}, Pos:`, rubricPosition);
+
+        if (!rubricPage) {
+            console.warn(`[RubricScroll] No rubric page defined for ${qId}`);
+            alert("No rubric page defined for this checkpoint.");
+            return;
+        }
+
+        const rubricTabBtn = document.getElementById('rubric-tab-btn');
+        const referenceTabBtn = document.getElementById('reference-tab-btn');
+        const broadcastsTabBtn = document.getElementById('broadcasts-tab-btn');
+        const rubricContent = document.getElementById('rubric-content');
+        const referenceContent = document.getElementById('reference-content');
+        const broadcastsContent = document.getElementById('broadcasts-content');
+        const pdfZoomControls = document.getElementById('pdf-zoom-controls');
+        const rightPanelFooter = document.getElementById('right-panel-footer');
+
+        // Ensure Rubric tab is active
+        if (!rubricTabBtn.classList.contains('text-primary')) {
+            console.log("[RubricScroll] Switching to Rubric tab manually");
+
+            // Deactivate others
+            [rubricTabBtn, referenceTabBtn, broadcastsTabBtn].forEach(btn => {
+                if (btn) {
+                    btn.classList.remove('text-primary', 'border-primary', 'bg-primary/10');
+                    btn.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'border-transparent');
+                }
+            });
+            [rubricContent, referenceContent, broadcastsContent].forEach(content => {
+                if (content) content.classList.add('hidden');
+            });
+
+            // Activate Rubric
+            rubricTabBtn.classList.add('text-primary', 'border-primary', 'bg-primary/10');
+            rubricTabBtn.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'border-transparent');
+            rubricContent.classList.remove('hidden');
+
+            // Show controls
+            if (pdfZoomControls) pdfZoomControls.classList.remove('hidden');
+            if (rightPanelFooter) rightPanelFooter.classList.remove('hidden');
+
+            // Update selectors visibility
+            const rubricSelector = document.getElementById('rubric-selector-container');
+            const referenceSelector = document.getElementById('reference-selector-container');
+            if (rubricSelector) rubricSelector.classList.remove('hidden');
+            if (referenceSelector) referenceSelector.classList.add('hidden');
+
+            // Trigger render if needed
+            if (window.initializeRubricViewer) {
+                await window.initializeRubricViewer();
+            }
+        }
+
+        // Allow UI to update (tab switch) before rendering/scrolling
+        setTimeout(async () => {
+            // Ensure Rubric is rendered
+            const rubricContainer = document.getElementById('rubric-viewer-container');
+            let pages = rubricContainer.querySelectorAll('canvas');
+
+            // Robust check: If no pages found, render regardless of cache
+            if (pages.length === 0) {
+                console.log("[RubricScroll] No pages found. Rendering...");
+                if (window.initializeRubricViewer) {
+                    const success = await window.initializeRubricViewer();
+                    if (!success) return;
+                    pages = rubricContainer.querySelectorAll('canvas');
+                }
+            }
+
+            console.log(`[RubricScroll] Found ${pages.length} pages in rubric container.`);
+            const targetPageCanvas = pages[rubricPage - 1]; // 0-based index
+
+            if (targetPageCanvas) {
+                console.log("[RubricScroll] Target canvas found. Scrolling and highlighting.");
+
+                // Calculate position
+                // position.y is a percentage string like "95%"
+                const yPercent = parseFloat(rubricPosition.y);
+                const xPercent = parseFloat(rubricPosition.x);
+
+                const topPx = (yPercent / 100) * targetPageCanvas.height;
+                const leftPx = (xPercent / 100) * targetPageCanvas.width;
+
+                // Scroll to the specific position
+                // We need to account for the canvas's offset within the container
+                // The container is #rubric-content (overflow-y-auto)
+                // The canvas is inside #rubric-viewer-container
+
+                const scrollContainer = document.getElementById('rubric-content');
+
+                // Calculate absolute top of the target point relative to the scroll container
+                const canvasRect = targetPageCanvas.getBoundingClientRect();
+                const containerRect = scrollContainer.getBoundingClientRect();
+
+                // Current scroll position
+                const currentScroll = scrollContainer.scrollTop;
+
+                // Distance from top of container to top of canvas
+                // We can use offsetTop if they are in the same offset context, 
+                // but rubric-viewer-container might complicate things.
+                // Safest is:
+                const relativeTop = targetPageCanvas.offsetTop;
+
+                // Scroll to the top of the page to ensure full context is visible
+                // Add a small margin (20px)
+                const targetScrollTop = relativeTop - 20;
+
+                scrollContainer.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+
+                // Draw Orange Box
+                const existingHighlight = document.getElementById('rubric-highlight-box');
+                if (existingHighlight) existingHighlight.remove();
+
+                // We append the highlight to rubric-viewer-container (relative) so it scrolls with content
+                // But we need to position it absolutely relative to that container
+
+                const highlightBox = document.createElement('div');
+                highlightBox.id = 'rubric-highlight-box';
+                highlightBox.style.position = 'absolute';
+                highlightBox.style.border = '4px solid #fb923c'; // orange-400
+                highlightBox.style.backgroundColor = 'rgba(251, 146, 60, 0.2)';
+                highlightBox.style.pointerEvents = 'none';
+                highlightBox.style.zIndex = '50';
+                highlightBox.style.borderRadius = '8px';
+                highlightBox.style.transition = 'opacity 0.5s';
+
+                // Define a fixed size for the highlight box, centered on the target
+                const boxWidth = targetPageCanvas.width * 0.95; // 95% of page width
+                const boxHeight = targetPageCanvas.height * 0.95; // 95% of page height
+
+                highlightBox.style.width = `${boxWidth}px`;
+                highlightBox.style.height = `${boxHeight}px`;
+
+                // Center horizontally
+                highlightBox.style.left = `${targetPageCanvas.offsetLeft + (targetPageCanvas.width - boxWidth) / 2}px`;
+
+                // Center vertically on the PAGE, not the specific point
+                highlightBox.style.top = `${targetPageCanvas.offsetTop + (targetPageCanvas.height - boxHeight) / 2}px`;
+
+                rubricContainer.appendChild(highlightBox);
+
+                setTimeout(() => {
+                    highlightBox.style.opacity = '0';
+                    setTimeout(() => highlightBox.remove(), 500);
+                }, 3000);
+            } else {
+                console.warn(`[RubricScroll] Target canvas for page ${rubricPage} not found.`);
+            }
+        }, 50);
+    });
 }

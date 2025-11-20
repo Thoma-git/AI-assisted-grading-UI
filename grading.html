@@ -294,7 +294,7 @@
     <script type="module">
         import { initializeTaWorkload } from './assets/js/grading-workload.js';
         import { renderStudentExamsList, updateManualGradingStatus, populateFilters, populateRubrics } from './assets/js/grading-exams-list.js';
-        import { initializeGradingView, loadStudentExam } from './assets/js/grading-view.js';
+        import { initializeGradingView, loadStudentExam, initializeScrollToRubricButtons } from './assets/js/grading-view.js';
         import { initializePdfViewer } from './assets/js/pdf-render.js';
 
         // Expose functions to window for global access (needed for inline event handlers if any)
@@ -366,6 +366,13 @@
                     initializeScrollToRubricButtons();
                     initializeContextMenu();
 
+                    // Pre-load Rubric Viewer (even if hidden)
+                    if (window.initializeRubricViewer) {
+                        window.initializeRubricViewer().then(success => {
+                            if (success) pdfRenderCache['rubric'] = true;
+                        });
+                    }
+
                     // Responsive Observers
                     new ResizeObserver(() => {
                         const currentPdfCanvas = document.querySelector('#pdf-page-container canvas');
@@ -424,7 +431,59 @@
             const container = document.getElementById('rubric-viewer-container');
             if (!container) return;
 
-            if (container.clientWidth === 0) return false; // Don't render if not visible
+            if (!container) return;
+
+            // Handle hidden container for background loading
+            let wasHidden = false;
+            if (container.offsetParent === null) {
+                // It's hidden. We need to make it visible to measure width.
+                // We'll use a trick: clone it, make it visible but absolute/invisible, measure, then use that width.
+                // OR simpler: just temporarily unhide it.
+                // Since this might happen during init, visual flicker is minimal.
+                // But to be safe, let's use the parent's width if possible, or a default.
+                // Actually, let's try to unhide it with visibility:hidden
+
+                // Check if parent (right-panel) is visible
+                const rightPanel = document.getElementById('right-panel');
+                if (rightPanel && rightPanel.offsetParent !== null) {
+                    wasHidden = true;
+                    // We need to remove 'hidden' class from rubric-content (which is the parent of container? No, container is rubric-viewer-container)
+                    // rubric-viewer-container is inside rubric-content.
+                    const rubricContent = document.getElementById('rubric-content');
+                    if (rubricContent && rubricContent.classList.contains('hidden')) {
+                        rubricContent.classList.remove('hidden');
+                        rubricContent.classList.add('invisible'); // Occupy space but invisible
+                        // We also need to make sure it doesn't break layout too much.
+                        // Since it's in a flex container (right-panel), it might push other things if they are visible.
+                        // But usually only one tab content is visible. 
+                        // If another tab is visible, showing this one might stack them.
+                        // So we should position it absolute.
+                        rubricContent.style.position = 'absolute';
+                        rubricContent.style.top = '0';
+                        rubricContent.style.width = '100%';
+                    }
+                }
+            }
+
+            // Re-measure width
+            const containerStyle = window.getComputedStyle(container);
+            let desiredWidth = container.clientWidth - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight) - 10;
+
+            // Restore if we messed with it
+            const rubricContent = document.getElementById('rubric-content');
+            if (wasHidden && rubricContent) {
+                // We need to wait for render? No, we just need width.
+                // But we need width for EACH page loop?
+                // The loop uses container.clientWidth.
+                // So we must keep it visible during the loop?
+                // Yes.
+            }
+
+            if (desiredWidth <= 0) {
+                // Fallback if still 0 (e.g. right panel hidden)
+                desiredWidth = 600;
+            }
+
             const pdfjsLib = window.pdfjsLib;
             if (!pdfjsLib) { console.error("PDF.js library not loaded."); return; }
             pdfjsLib.GlobalWorkerOptions.workerSrc = window.pdfjsWorker;
@@ -485,6 +544,16 @@
                 container.innerHTML = `<div class="p-4 text-center text-red-500">Failed to load rubric PDF.</div>`;
             } finally {
                 updateZoomDisplay('rubric');
+
+                // Restore hidden state if we forced it
+                const rubricContent = document.getElementById('rubric-content');
+                if (wasHidden && rubricContent) {
+                    rubricContent.classList.add('hidden');
+                    rubricContent.classList.remove('invisible');
+                    rubricContent.style.position = '';
+                    rubricContent.style.top = '';
+                    rubricContent.style.width = '';
+                }
             }
         };
         window.initializeReferenceViewer = async function (pdfUrl) {
@@ -1155,166 +1224,7 @@
             });
         }
 
-        function initializeScrollToRubricButtons() {
-            const rubricPageMapping = {
-                'Q1': 2,
-                'Q2': 3,
-                'Q3': 4,
-                'Q3A': 4,
-                'Q3B': 4,
-                'Q4': 5,
-                'Q4A': 5,
-                'Q4B': 5
-            };
-
-            // Use Event Delegation for dynamically created buttons
-            document.addEventListener('click', async (e) => {
-                const button = e.target.closest('.scroll-to-rubric-btn');
-                if (!button) return;
-
-                console.log("[RubricScroll] Button clicked");
-                e.stopPropagation(); // Prevent any parent click handlers
-
-                const sourceCheckpoint = button.closest('.grading-checkpoint-group');
-
-                const titleEl = document.getElementById('exam-title');
-                let questionId = null;
-                if (titleEl) {
-                    const match = titleEl.textContent.match(/\(([^)]+)\)/);
-                    if (match) questionId = match[1];
-                }
-                console.log(`[RubricScroll] Extracted Question ID: ${questionId}`);
-
-                if (!questionId) {
-                    console.warn("[RubricScroll] Could not determine Question ID for rubric scrolling.");
-                    return;
-                }
-
-                const targetPageNum = rubricPageMapping[questionId];
-                console.log(`[RubricScroll] Target Page: ${targetPageNum}`);
-
-                if (!targetPageNum) {
-                    console.warn(`[RubricScroll] No rubric page mapped for ${questionId}`);
-                    return;
-                }
-
-                const rubricTabBtn = document.getElementById('rubric-tab-btn');
-                const referenceTabBtn = document.getElementById('reference-tab-btn');
-                const broadcastsTabBtn = document.getElementById('broadcasts-tab-btn');
-                const rubricContent = document.getElementById('rubric-content');
-                const referenceContent = document.getElementById('reference-content');
-                const broadcastsContent = document.getElementById('broadcasts-content');
-                const pdfZoomControls = document.getElementById('pdf-zoom-controls');
-                const rightPanelFooter = document.getElementById('right-panel-footer');
-
-                // Ensure Rubric tab is active
-                if (!rubricTabBtn.classList.contains('text-primary')) {
-                    console.log("[RubricScroll] Switching to Rubric tab manually");
-
-                    // Deactivate others
-                    [rubricTabBtn, referenceTabBtn, broadcastsTabBtn].forEach(btn => {
-                        if (btn) {
-                            btn.classList.remove('text-primary', 'border-primary', 'bg-primary/10');
-                            btn.classList.add('text-gray-500', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'border-transparent');
-                        }
-                    });
-                    [rubricContent, referenceContent, broadcastsContent].forEach(content => {
-                        if (content) content.classList.add('hidden');
-                    });
-
-                    // Activate Rubric
-                    rubricTabBtn.classList.add('text-primary', 'border-primary', 'bg-primary/10');
-                    rubricTabBtn.classList.remove('text-gray-500', 'dark:text-gray-400', 'hover:bg-gray-100', 'dark:hover:bg-gray-700/50', 'hover:text-primary', 'border-transparent');
-                    rubricContent.classList.remove('hidden');
-
-                    // Show controls
-                    if (pdfZoomControls) pdfZoomControls.classList.remove('hidden');
-                    if (rightPanelFooter) rightPanelFooter.classList.remove('hidden');
-
-                    // Update selectors visibility
-                    const rubricSelector = document.getElementById('rubric-selector-container');
-                    const referenceSelector = document.getElementById('reference-selector-container');
-                    if (rubricSelector) rubricSelector.classList.remove('hidden');
-                    if (referenceSelector) referenceSelector.classList.add('hidden');
-                }
-
-                // Allow UI to update (tab switch) before rendering/scrolling
-                setTimeout(async () => {
-                    // Ensure Rubric is rendered
-                    const rubricContainer = document.getElementById('rubric-viewer-container');
-                    let pages = rubricContainer.querySelectorAll('canvas');
-
-                    // Robust check: If no pages found, render regardless of cache
-                    if (pages.length === 0) {
-                        console.log("[RubricScroll] No pages found. Rendering...");
-                        if (window.initializeRubricViewer) {
-                            const success = await window.initializeRubricViewer();
-                            console.log(`[RubricScroll] Render success: ${success}`);
-                            if (success) {
-                                pdfRenderCache['rubric'] = true;
-                                pages = rubricContainer.querySelectorAll('canvas');
-                            } else {
-                                return;
-                            }
-                        }
-                    } else {
-                        console.log("[RubricScroll] Pages found. Skipping render.");
-                    }
-
-                    console.log(`[RubricScroll] Found ${pages.length} pages in rubric container.`);
-                    const targetPageCanvas = pages[targetPageNum - 1]; // 0-based index
-
-                    if (targetPageCanvas) {
-                        console.log("[RubricScroll] Target canvas found. Scrolling and highlighting.");
-
-                        // Use scrollIntoView for robust scrolling
-                        targetPageCanvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                        // Draw Orange Box
-                        const existingHighlight = document.getElementById('rubric-highlight-box');
-                        if (existingHighlight) existingHighlight.remove();
-
-                        const highlightBox = document.createElement('div');
-                        highlightBox.id = 'rubric-highlight-box';
-                        highlightBox.style.position = 'absolute';
-                        highlightBox.style.border = '4px solid orange';
-                        highlightBox.style.backgroundColor = 'rgba(255, 165, 0, 0.1)';
-                        highlightBox.style.pointerEvents = 'none';
-                        highlightBox.style.zIndex = '10';
-                        highlightBox.style.borderRadius = '8px';
-
-                        // Position exactly over the canvas
-                        highlightBox.style.top = `${targetPageCanvas.offsetTop}px`;
-                        highlightBox.style.left = `${targetPageCanvas.offsetLeft}px`;
-                        highlightBox.style.width = `${targetPageCanvas.width}px`;
-                        highlightBox.style.height = `${targetPageCanvas.height}px`;
-
-                        rubricContainer.appendChild(highlightBox);
-
-                        setTimeout(() => {
-                            highlightBox.style.transition = 'opacity 1s';
-                            highlightBox.style.opacity = '0';
-                            setTimeout(() => highlightBox.remove(), 1000);
-                        }, 3000);
-                    } else {
-                        console.warn(`[RubricScroll] Target canvas for page ${targetPageNum} not found.`);
-                    }
-                }, 50); // Small delay for tab switch layout update
-            });
-
-            // Dynamically update the hover title using delegation
-            document.addEventListener('mouseover', (e) => {
-                const button = e.target.closest('.scroll-to-rubric-btn');
-                if (!button) return;
-
-                const isReferenceTabActive = !document.getElementById('reference-content').classList.contains('hidden');
-                if (isReferenceTabActive) {
-                    button.title = 'Scroll to relevant reference';
-                } else {
-                    button.title = 'Scroll to rubric criterion';
-                }
-            });
-        }
+        // initializeScrollToRubricButtons is now imported from grading-view.js
 
         function initializeContextMenu() {
             const menu = document.getElementById('exam-item-context-menu');

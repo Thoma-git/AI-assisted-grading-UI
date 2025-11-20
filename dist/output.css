@@ -1537,6 +1537,10 @@ select {
   visibility: visible;
 }
 
+.invisible {
+  visibility: hidden;
+}
+
 .static {
   position: static;
 }
@@ -2445,10 +2449,6 @@ select {
 .bg-green-500 {
   --tw-bg-opacity: 1;
   background-color: rgb(34 197 94 / var(--tw-bg-opacity, 1));
-}
-
-.bg-orange-500\/30 {
-  background-color: rgb(249 115 22 / 0.3);
 }
 
 .bg-primary {

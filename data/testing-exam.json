@@ -99,11 +99,29 @@
             "rubricPage": 4,
             "position": {
                 "x": "50%",
+                "y": "80%"
+            }
+        },
+        {
+            "questionId": "Q3B",
+            "page": 4,
+            "rubricPage": 4,
+            "position": {
+                "x": "50%",
                 "y": "95%"
             }
         },
         {
             "questionId": "Q4A",
+            "page": 5,
+            "rubricPage": 5,
+            "position": {
+                "x": "50%",
+                "y": "80%"
+            }
+        },
+        {
+            "questionId": "Q4B",
             "page": 5,
             "rubricPage": 5,
             "position": {
@@ -362,79 +380,79 @@
                 {
                     "taskId": "Q1",
                     "version": "first",
-                    "confidence": 85,
+                    "confidence": 75,
                     "assigned": false
                 },
                 {
                     "taskId": "Q1",
                     "version": "second",
-                    "confidence": 85,
+                    "confidence": 75,
                     "assigned": false
                 },
                 {
                     "taskId": "Q2",
                     "version": "first",
-                    "confidence": 72,
+                    "confidence": 79,
                     "assigned": false
                 },
                 {
                     "taskId": "Q2",
                     "version": "second",
+                    "confidence": 79,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q3A",
+                    "version": "first",
+                    "confidence": 75,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q3A",
+                    "version": "second",
+                    "confidence": 75,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q3B",
+                    "version": "first",
+                    "confidence": 78,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q3B",
+                    "version": "second",
+                    "confidence": 78,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q4A",
+                    "version": "first",
+                    "confidence": 84,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q4A",
+                    "version": "second",
+                    "confidence": 84,
+                    "assigned": false
+                },
+                {
+                    "taskId": "Q4B",
+                    "version": "first",
                     "confidence": 72,
                     "assigned": false
                 },
                 {
-                    "taskId": "Q3A",
-                    "version": "first",
-                    "confidence": 34,
-                    "assigned": false
-                },
-                {
-                    "taskId": "Q3A",
-                    "version": "second",
-                    "confidence": 34,
-                    "assigned": false
-                },
-                {
-                    "taskId": "Q3B",
-                    "version": "first",
-                    "confidence": 68,
-                    "assigned": false
-                },
-                {
-                    "taskId": "Q3B",
-                    "version": "second",
-                    "confidence": 68,
-                    "assigned": false
-                },
-                {
-                    "taskId": "Q4A",
-                    "version": "first",
-                    "confidence": 91,
-                    "assigned": false
-                },
-                {
-                    "taskId": "Q4A",
-                    "version": "second",
-                    "confidence": 91,
-                    "assigned": false
-                },
-                {
-                    "taskId": "Q4B",
-                    "version": "first",
-                    "confidence": 55,
-                    "assigned": false
-                },
-                {
                     "taskId": "Q4B",
                     "version": "second",
-                    "confidence": 55,
+                    "confidence": 72,
                     "assigned": false
                 }
             ]
         },
         "gradingParameters": {
-            "studentScoreThreshold": 75,
+            "studentScoreThreshold": 30,
             "aiConfidenceThreshold": 80,
             "highlightAIAttention": false,
             "showAIReasoning": true
